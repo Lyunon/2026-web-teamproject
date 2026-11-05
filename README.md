@@ -4,9 +4,30 @@
 
 개발 환경 : HTML+CSS+JavaScript, Gemini API, Firebase
 
-| 영역 | 기술 | 위치 |
-| --- | --- | --- |
-| 화면 | HTML, CSS, JS (브라우저에서 실행) | public/ |
-| 서버 로직 | JS (Node.js 서버리스 함수) | api/ |
-| 로그인, DB | Firebase Auth, Firestore | 클라우드 서비스 |
-| AI | Gemini API | api/에서만 호출 |
+| 영역 | 기술 |
+| --- | --- |
+| 프런트엔드 | HTML, CSS, JavaScript (순수, ES modules) |
+| 백엔드 | Vercel Serverless Functions (Node.js, api/ 폴더) |
+| 인증, DB | Firebase Auth, Firestore |
+| AI | Gemini API (서버에서만 호출) |
+| 배포 | GitHub main push → Vercel 자동 배포 |
+
+## 설계 예정도
+2026-web-teamproject/
+├─ public/
+│   ├─ index.html          # 랜딩 + 로그인
+│   ├─ cases.html          # 사건 목록
+│   ├─ play.html           # 게임 화면
+│   ├─ result.html         # 결과 + 해설
+│   ├─ css/  base.css, layout.css, chat.css, play.css
+│   └─ js/   firebase.js, api.js, state.js, chat.js,
+│            clues.js, notes.js, accuse.js
+├─ api/
+│   ├─ _lib/  auth.js, firestore.js, gemini.js, prompt.js, rules.js
+│   └─ session/start.js
+│      interrogate.js, investigate.js, hint.js, accuse.js
+├─ firestore.rules
+├─ package.json            # firebase-admin, @google/genai
+├─ vercel.json
+├─ .env.example            # 키 이름만 적은 템플릿 (커밋)
+└─ .gitignore              # .env.local 제외
