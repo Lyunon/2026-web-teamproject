@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>결과 · 추리 게임</title>
+  <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="cases.html">추리 게임</a>
+    <div id="user-area"></div>
+  </header>
+  <main class="container narrow">
+    <section class="card result">
+      <p id="result-case" class="muted"></p>
+      <h1 id="result-title"></h1>
+      <p id="result-culprit"></p>
+      <p id="result-score" class="score"></p>
+      <h3>사건 해설</h3>
+      <p id="result-explain" class="explain"></p>
+      <div class="dialog-actions">
+        <a class="btn btn-primary" href="cases.html">다른 사건 보기</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="js/result.js"></script>
+</body>
+</html>
