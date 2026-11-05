@@ -13,6 +13,7 @@
 | 배포 | GitHub main push → Vercel 자동 배포 |
 
 ## 설계 예정도
+
 2026-web-teamproject/
 ├─ public/
 │   ├─ index.html          # 랜딩 + 로그인
