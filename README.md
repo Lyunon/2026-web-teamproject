@@ -1,6 +1,7 @@
 # 2026-web-teamproject
 
 해당 레포지토리는 2026 웹프로그래밍 팀프로젝트 레포지토리입니다.
+레포지토리 상태가 Private로 되어 있으니 LLM을 활용할 거면 따로 커넥터 기능을 사용하는 것을 권장합니다.
 
 개발 환경 : HTML+CSS+JavaScript, Gemini API, Firebase
 
