@@ -13,7 +13,7 @@
 | 배포 | GitHub main push → Vercel 자동 배포 |
 
 ## 설계 예정도
-
+```
 2026-web-teamproject/
 ├─ public/
 │   ├─ index.html          # 랜딩 + 로그인
@@ -32,3 +32,4 @@
 ├─ vercel.json
 ├─ .env.example            # 키 이름만 적은 템플릿 (커밋)
 └─ .gitignore              # .env.local 제외
+```
