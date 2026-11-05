@@ -4,6 +4,8 @@
 
 .env 파일, API 키들이 평문으로 작성되어 있는 json 파일이 필요하기에 레포지토리 상태가 Private로 되어 있으니 LLM을 활용할 거면 따로 커넥터 기능을 사용하는 것을 권장합니다.
 
+https://2026-web-teamproject.vercel.app
+
 개발 환경 : HTML+CSS+JavaScript, Gemini API, Firebase
 
 | 영역 | 기술 |
