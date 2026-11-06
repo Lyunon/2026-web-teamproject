@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 추리 수사관 - 사건 목록</title>
+  <link rel="stylesheet" href="./css/base.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부</div>
+    <div class="header-right">
+      <span id="user-display">접속 수사관: 김형사님</span>
+      <a href="./index.html" class="btn">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="cases-container">
+    <div class="cases-top-bar">
+      <div>
+        <h1>📂 사건 에피소드 목록</h1>
+        <p>제미나이(Gemini) API로 생성된 사건 에피소드를 선택하고 <strong>[수사 시작]</strong>을 눌러 사건 수첩을 여세요.</p>
+      </div>
+      <!-- 추후 Gemini API 사건 생성 엔드포인트 연동 버튼 -->
+      <button id="btn-generate-episode" class="btn btn-primary" type="button">
+        ✨ Gemini API로 새 사건 에피소드 생성
+      </button>
+    </div>
+
+    <!-- 사건 에피소드 그리드 -->
+    <section id="episode-list" class="episode-grid">
+
+      <!-- 에피소드 1 -->
+      <article class="episode-card" data-case-id="case-01">
+        <div>
+          <div class="episode-meta">
+            <span class="episode-tag">EPISODE 01 · 밀실 사건</span>
+            <span class="episode-difficulty">난이도 ★★★☆☆</span>
+          </div>
+          <h2>자정의 서재 밀실 사건</h2>
+          <p class="episode-desc">
+            폭우가 쏟아지던 밤 11시 40분, 대저택 2층 서재에서 강 회장이 숨진 채 발견되었습니다. 안에서 잠긴 서재와 용의자 3명의 엇갈리는 알리바이를 파헤치세요.
+          </p>
+        </div>
+        <div class="episode-Start-wrap">
+          <a href="./play.html?case=case-01" class="btn btn-primary">수사 시작</a>
+        </div>
+      </article>
+
+      <!-- 에피소드 2 -->
+      <article class="episode-card" data-case-id="case-02">
+        <div>
+          <div class="episode-meta">
+            <span class="episode-tag">EPISODE 02 · 미술관 도난</span>
+            <span class="episode-difficulty">난이도 ★★★★☆</span>
+          </div>
+          <h2>사라진 푸른 다이아몬드</h2>
+          <p class="episode-desc">
+            자선 경매 개막 10분 전, 보안 구역 전시관의 핵심 보석이 감쪽같이 사라졌습니다. 내부 관계자 3명 중 거짓말을 하는 범인을 찾아내세요.
+          </p>
+        </div>
+        <div class="episode-Start-wrap">
+          <a href="./play.html?case=case-02" class="btn btn-primary">수사 시작</a>
+        </div>
+      </article>
+
+      <!-- 에피소드 3 -->
+      <article class="episode-card" data-case-id="case-03">
+        <div>
+          <div class="episode-meta">
+            <span class="episode-tag">EPISODE 03 · 특급열차 미스터리</span>
+            <span class="episode-difficulty">난이도 ★★★☆☆</span>
+          </div>
+          <h2>설원 열차 3호실의 비밀</h2>
+          <p class="episode-desc">
+            종착역 도착 직전, 특실 승객이 의식을 잃은 채 발견되었습니다. 열차 내 승무원과 동승객의 증언 속 모순을 추적하세요.
+          </p>
+        </div>
+        <div class="episode-Start-wrap">
+          <a href="./play.html?case=case-03" class="btn btn-primary">수사 시작</a>
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+  <script defer src="./js/cases.js"></script>
+</body>
+</html>
