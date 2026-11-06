@@ -1,0 +1,25 @@
+{
+  "name": "2026-web-teamproject",
+  "version": "1.0.0",
+  "description": "해당 레포지토리는 2026 웹프로그래밍 팀프로젝트 레포지토리입니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lyunon/2026-web-teamproject.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Lyunon/2026-web-teamproject/issues"
+  },
+  "homepage": "https://github.com/Lyunon/2026-web-teamproject#readme",
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "firebase-admin": "^14.5.0"
+  }
+}
