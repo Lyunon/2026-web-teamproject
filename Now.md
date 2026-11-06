@@ -25,3 +25,4 @@ public/
     ├─ index.js  cases.js  play.js  result.js  auth-complete.js
 ```
 
+현재 프론트엔드는 목업 형태로 구현됨
