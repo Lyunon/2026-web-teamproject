@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>추리 게임 · 개발 테스트</title>
+<style>
+  :root { --bg:#12141a; --panel:#1b1f29; --line:#2c3242; --text:#e6e8ee; --dim:#9aa3b5; --accent:#d8a657; --bad:#e5736b; --good:#7fc88f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 system-ui,"Malgun Gothic",sans-serif; }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); }
+  h1 { margin:0 0 4px; font-size:20px; }
+  h2 { margin:14px 0 6px; font-size:14px; color:var(--accent); }
+  h2:first-child { margin-top:0; }
+  #intro { margin:0 0 8px; color:var(--dim); white-space:pre-wrap; }
+  .badge { font-size:12px; color:var(--bad); border:1px solid var(--bad); border-radius:4px; padding:1px 6px; margin-right:8px; }
+  main { display:grid; grid-template-columns:280px 1fr 300px; gap:16px; padding:16px 24px; }
+  @media (max-width:1000px) { main { grid-template-columns:1fr; } }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; min-width:0; }
+  button, select, input { font:inherit; color:var(--text); background:#242a38; border:1px solid var(--line); border-radius:6px; padding:6px 10px; }
+  button { cursor:pointer; }
+  button:hover:not(:disabled) { border-color:var(--accent); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  ul { list-style:none; margin:0; padding:0; }
+  .clue { padding:8px 0; border-bottom:1px solid var(--line); }
+  .clue b { display:block; }
+  .clue small { color:var(--dim); }
+  .clue p { margin:4px 0 0; }
+  #tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  #tabs button.active { border-color:var(--accent); color:var(--accent); }
+  #log { height:420px; overflow-y:auto; padding:8px; background:#151821; border-radius:6px; margin-bottom:10px; }
+  .msg { margin:8px 0; padding:8px 10px; border-radius:6px; white-space:pre-wrap; }
+  .msg.me { background:#27324a; margin-left:48px; }
+  .msg.them { background:#2a2630; margin-right:48px; }
+  .msg.sys { color:var(--accent); font-size:13px; padding:2px 10px; }
+  .msg .who { display:block; font-size:12px; color:var(--dim); }
+  form, .row { display:flex; gap:6px; margin-bottom:8px; }
+  form input { flex:1; min-width:0; }
+  .row select { flex:1; min-width:0; }
+  #targets { display:flex; flex-wrap:wrap; gap:6px; }
+  #status { min-height:22px; margin:6px 0 0; color:var(--dim); font-size:13px; white-space:pre-wrap; }
+  #status.err { color:var(--bad); }
+  #hintOut p { margin:6px 0; color:var(--dim); }
+  #result { margin:0 24px 24px; }
+  #result.ok h2 { color:var(--good); }
+  #result.ng h2 { color:var(--bad); }
+  #result pre { white-space:pre-wrap; font:inherit; margin:6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">불러오는 중…</h1>
+  <p id="intro"></p>
+  <span class="badge">로컬 개발 모드</span>
+  <button id="reset" type="button">처음부터 다시</button>
+</header>
+
+<main>
+  <section>
+    <h2>확보한 단서</h2>
+    <ul id="clueList"></ul>
+  </section>
+
+  <section>
+    <div id="tabs"></div>
+    <div id="log"></div>
+    <form id="form">
+      <input id="msg" maxlength="300" autocomplete="off" placeholder="질문을 입력하세요">
+      <button id="send" type="submit">보내기</button>
+    </form>
+    <div class="row">
+      <select id="showSel"></select>
+      <button id="showBtn" type="button">단서 제시</button>
+    </div>
+    <div id="status"></div>
+  </section>
+
+  <section>
+    <h2>현장 조사</h2>
+    <div id="targets"></div>
+    <h2>힌트</h2>
+    <button id="hintBtn" type="button">힌트 보기</button>
+    <div id="hintOut"></div>
+    <h2>범인 지목</h2>
+    <div class="row">
+      <select id="accuseSel"></select>
+      <button id="accuseBtn" type="button">지목</button>
+    </div>
+  </section>
+</main>
+
+<section id="result" hidden></section>
+
+<script>
+const CASE_ID = "mansion-001";
+const KEY = "dev-state:" + CASE_ID;
+const $ = (id) => document.getElementById(id);
+
+let info;           // /api/start 응답
+let state;          // 브라우저가 들고 있는 진행 상태 (localStorage)
+let current = null; // 선택한 용의자 id
+let busy = false;
+
+async function api(name, body) {
+  const res = await fetch("/api/" + name, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let json;
+  try { json = await res.json(); } catch { throw new Error("서버 응답을 읽을 수 없습니다."); }
+  if (!json.ok) throw new Error(json.error || "오류가 발생했습니다.");
+  return json.data;
+}
+
+function fresh(d) {
+  return {
+    unlocked: [...d.unlocked],
+    clues: Object.fromEntries(d.clues.map((c) => [c.id, c])),
+    histories: {}, logs: {}, hints: [], hintCount: 0, result: null,
+  };
+}
+function loadState(d) {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.unlocked) && s.clues) return { ...fresh(d), ...s };
+  } catch {}
+  return fresh(d);
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function suspectName(id) {
+  return (info.suspects.find((s) => s.id === id) || {}).name || id;
+}
+function setStatus(text, isErr) {
+  $("status").textContent = text || "";
+  $("status").className = isErr ? "err" : "";
+}
+function setBusy(v, text) {
+  busy = v;
+  setStatus(v ? text : "");
+  renderControls();
+}
+
+/* ---------- 렌더링 (모든 텍스트는 textContent로만 넣는다) ---------- */
+
+function renderClues() {
+  const ul = $("clueList");
+  ul.replaceChildren();
+  for (const id of state.unlocked) {
+    const c = state.clues[id];
+    if (!c) continue;
+    const li = document.createElement("li");
+    li.className = "clue";
+    const b = document.createElement("b");
+    b.textContent = "[" + c.id + "] " + c.title;
+    const s = document.createElement("small");
+    s.textContent = c.location;
+    const p = document.createElement("p");
+    p.textContent = c.text;
+    li.append(b, s, p);
+    ul.append(li);
+  }
+}
+
+function renderTabs() {
+  const box = $("tabs");
+  box.replaceChildren();
+  for (const s of info.suspects) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = s.name + " (" + s.role + ")";
+    if (s.id === current) b.className = "active";
+    b.onclick = () => { current = s.id; renderTabs(); renderLog(); renderControls(); };
+    box.append(b);
+  }
+}
+
+function renderLog() {
+  const log = $("log");
+  log.replaceChildren();
+  const add = (cls, text, who) => {
+    const d = document.createElement("div");
+    d.className = "msg " + cls;
+    if (who) {
+      const w = document.createElement("span");
+      w.className = "who";
+      w.textContent = who;
+      d.append(w);
+    }
+    d.append(document.createTextNode(text));
+    log.append(d);
+  };
+  if (!current) { add("sys", "오른쪽 위의 용의자를 선택하세요."); return; }
+  const s = info.suspects.find((x) => x.id === current);
+  add("sys", s.name + " — " + s.publicBio);
+  for (const e of state.logs[current] || []) {
+    if (e.who === "them") add("them", e.text, s.name + (e.emotion ? " (" + e.emotion + ")" : ""));
+    else add(e.who, e.text);
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderShowSel() {
+  const sel = $("showSel");
+  sel.replaceChildren();
+  for (const id of state.unlocked) {
+    const c = state.clues[id];
+    if (!c) continue;
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = "[" + id + "] " + c.title;
+    sel.append(o);
+  }
+}
+
+function renderTargets() {
+  const box = $("targets");
+  box.replaceChildren();
+  for (const t of info.targets) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = t;
+    b.dataset.target = t;
+    b.onclick = () => investigate(t);
+    box.append(b);
+  }
+}
+
+function renderAccuse() {
+  const sel = $("accuseSel");
+  sel.replaceChildren();
+  for (const s of info.suspects) {
+    const o = document.createElement("option");
+    o.value = s.id;
+    o.textContent = s.name + " (" + s.role + ")";
+    sel.append(o);
+  }
+}
+
+function renderHints() {
+  const box = $("hintOut");
+  box.replaceChildren();
+  state.hints.forEach((h, i) => {
+    const p = document.createElement("p");
+    p.textContent = "힌트 " + (i + 1) + ": " + h;
+    box.append(p);
+  });
+  $("hintBtn").textContent = "힌트 보기 (-" + info.hintPenalty + "점)";
+}
+
+function renderResult() {
+  const r = state.result;
+  const box = $("result");
+  box.hidden = !r;
+  if (!r) return;
+  box.className = r.correct ? "ok" : "ng";
+  box.replaceChildren();
+  const h = document.createElement("h2");
+  h.textContent = r.correct
+    ? "정답입니다. 범인은 " + suspectName(r.culprit) + "입니다."
+    : "틀렸습니다.";
+  const sc = document.createElement("div");
+  sc.textContent = "점수 " + r.score + " (범인 " + r.base + " - 힌트 감점 " + r.penalty + ")";
+  const pre = document.createElement("pre");
+  pre.textContent = r.solutionExplain;
+  box.append(h, sc, pre);
+}
+
+function renderControls() {
+  const off = busy || !!state.result;
+  const noTarget = off || !current;
+  $("send").disabled = noTarget;
+  $("msg").disabled = noTarget;
+  $("showBtn").disabled = noTarget || !$("showSel").value;
+  $("hintBtn").disabled = off;
+  $("accuseBtn").disabled = off;
+  document.querySelectorAll("#targets button").forEach((b) => (b.disabled = off));
+}
+
+/* ---------- 동작 ---------- */
+
+function pushLog(id, entry) {
+  (state.logs[id] ||= []).push(entry);
+  save();
+  if (id === current) renderLog();
+}
+
+function applyUnlock(d, who) {
+  state.unlocked = d.unlocked;
+  for (const c of d.newClues) {
+    state.clues[c.id] = c;
+    if (who) pushLog(who, { who: "sys", text: "★ 새 단서 해금: [" + c.id + "] " + c.title });
+  }
+  save();
+  renderClues();
+  renderShowSel();
+}
+
+async function ask(message, showClueId) {
+  if (!current || busy || state.result) return;
+  const clue = showClueId ? state.clues[showClueId] : null;
+  if (!clue && !message) return;
+
+  const who = current;
+  pushLog(who, {
+    who: "me",
+    text: clue ? "[단서 제시] " + clue.title + (message ? " — " + message : "") : message,
+  });
+  setBusy(true, "응답을 기다리는 중…");
+  try {
+    const d = await api("ask", {
+      caseId: CASE_ID, suspectId: who, message, showClueId: showClueId || undefined,
+      unlocked: state.unlocked, history: state.histories[who] || [],
+    });
+    const h = (state.histories[who] ||= []);
+    h.push({ role: "user", text: d.historyUser }, { role: "model", text: d.historyModel });
+    state.histories[who] = h.slice(-20);
+    pushLog(who, { who: "them", text: d.reply, emotion: d.emotion });
+    applyUnlock(d, who);
+    setBusy(false);
+  } catch (e) {
+    pushLog(who, { who: "sys", text: "응답 실패: " + e.message });
+    setBusy(false);
+    setStatus(e.message, true);
+  }
+}
+
+async function investigate(target) {
+  if (busy || state.result) return;
+  setBusy(true, "조사 중…");
+  try {
+    const d = await api("investigate", { caseId: CASE_ID, target, unlocked: state.unlocked });
+    applyUnlock(d, null);
+    setBusy(false);
+    const found = d.newClues.map((c) => "★ [" + c.id + "] " + c.title + "\n" + c.text).join("\n");
+    setStatus(d.message + (found ? "\n" + found : ""));
+  } catch (e) {
+    setBusy(false);
+    setStatus(e.message, true);
+  }
+}
+
+async function hint() {
+  if (busy || state.result) return;
+  setBusy(true, "힌트를 가져오는 중…");
+  try {
+    const d = await api("hint", { caseId: CASE_ID, hintCount: state.hintCount });
+    state.hintCount = d.hintCount;
+    state.hints.push(d.hint);
+    save();
+    renderHints();
+    setBusy(false);
+  } catch (e) {
+    setBusy(false);
+    setStatus(e.message, true);
+  }
+}
+
+async function accuse() {
+  if (busy || state.result) return;
+  const id = $("accuseSel").value;
+  if (!confirm(suspectName(id) + "을(를) 범인으로 지목합니다. 게임이 끝납니다.")) return;
+  setBusy(true, "판정 중…");
+  try {
+    state.result = await api("accuse", { caseId: CASE_ID, suspectId: id, hintCount: state.hintCount });
+    save();
+    setBusy(false);
+    renderResult();
+    renderControls();
+  } catch (e) {
+    setBusy(false);
+    setStatus(e.message, true);
+  }
+}
+
+$("form").onsubmit = (ev) => {
+  ev.preventDefault();
+  const text = $("msg").value.trim();
+  if (!text) return;
+  $("msg").value = "";
+  ask(text, null);
+};
+$("showBtn").onclick = () => {
+  const text = $("msg").value.trim();
+  $("msg").value = "";
+  ask(text, $("showSel").value);
+};
+$("hintBtn").onclick = hint;
+$("accuseBtn").onclick = accuse;
+$("reset").onclick = () => {
+  if (!confirm("진행 상황을 지우고 처음부터 시작합니다.")) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+};
+
+(async function init() {
+  try {
+    info = await api("start", { caseId: CASE_ID });
+  } catch (e) {
+    $("title").textContent = "사건을 불러오지 못했습니다";
+    setStatus(e.message, true);
+    return;
+  }
+  state = loadState(info);
+  $("title").textContent = info.title;
+  $("intro").textContent = info.intro;
+  renderClues(); renderTabs(); renderLog(); renderShowSel();
+  renderTargets(); renderAccuse(); renderHints(); renderResult(); renderControls();
+})();
+</script>
+</body>
+</html>

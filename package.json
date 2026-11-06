@@ -4,7 +4,8 @@
   "description": "해당 레포지토리는 2026 웹프로그래밍 팀프로젝트 레포지토리입니다.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --env-file=.env server.mjs"
   },
   "repository": {
     "type": "git",
