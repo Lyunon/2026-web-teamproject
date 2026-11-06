@@ -6,6 +6,8 @@
 
 https://2026-web-teamproject.vercel.app
 
+개발 간트 차트 : https://docs.google.com/spreadsheets/d/1tj85U68tbwi6uvfH21Ie25zttXo8McmHcbgiYQZhJ6w/edit?gid=0#gid=0
+
 개발 환경 : HTML+CSS+JavaScript, Gemini API, Firebase
 
 | 영역 | 기술 |
