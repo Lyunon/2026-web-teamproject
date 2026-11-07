@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 추리 수사관 - 사건 목록</title>
+  <link rel="stylesheet" href="./css/base.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부</div>
+    <div class="header-right">
+      <span id="user-display">접속 수사관: 김형사님</span>
+      <a href="./index.html" class="btn">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="cases-container">
+    <div class="cases-top-bar">
+      <div>
+        <h1>📂 사건 에피소드 목록</h1>
+        <p>제미나이(Gemini) API 및 JSON 시나리오로 구성된 사건을 선택하고 <strong>[수사 시작]</strong>을 누르세요.</p>
+      </div>
+      <button id="btn-generate-episode" class="btn btn-primary" type="button">
+        ✨ Gemini API로 새 사건 에피소드 생성
+      </button>
+    </div>
+
+    <section id="episode-list" class="episode-grid">
+
+      <!-- mansion-001.json 메인 에피소드 -->
+      <article class="episode-card" data-case-id="mansion-001">
+        <div>
+          <div class="episode-meta">
+            <span class="episode-tag">mansion-001 · 메인 시나리오</span>
+            <span class="episode-difficulty">난이도: 보통</span>
+          </div>
+          <h2>송림 저택의 마지막 밤</h2>
+          <p class="episode-desc">
+            폭우로 길이 끊긴 송림 저택에서 강태산 회장이 숨진 채 발견되었다. 주치의는 심장마비라고 하지만, 회장은 어제까지 건강했고 이번 주에 유언장을 고치려 했다는 소문이 있다. 날이 밝아 도로가 열리기 전까지, 저택 안의 다섯 명 중 누군가의 거짓말을 찾아내야 한다.
+          </p>
+        </div>
+        <div class="episode-Start-wrap">
+          <a href="./play.html?case=mansion-001" class="btn btn-primary">수사 시작</a>
+        </div>
+      </article>
+
+      <!-- 에피소드 2 -->
+      <article class="episode-card" data-case-id="case-02">
+        <div>
+          <div class="episode-meta">
+            <span class="episode-tag">EPISODE 02 · 미술관 도난</span>
+            <span class="episode-difficulty">난이도: 어려움</span>
+          </div>
+          <h2>사라진 푸른 다이아몬드</h2>
+          <p class="episode-desc">
+            자선 경매 개막 10분 전, 보안 구역 전시관의 핵심 보석이 감쪽같이 사라졌습니다. 내부 관계자 중 거짓말을 하는 범인을 찾아내세요.
+          </p>
+        </div>
+        <div class="episode-Start-wrap">
+          <a href="./play.html?case=mansion-001" class="btn btn-primary">수사 시작</a>
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+  <script defer src="./js/cases.js"></script>
+</body>
+</html>
