@@ -28,3 +28,11 @@ public/
 현재 프론트엔드는 목업 형태로 구현됨. 백엔드 구현 필요.
 
 제미나이 API 연동 확인. 현재는 API 키 보안으로 인하여 로컬에서만 동작하도록 했음.
+
+- 로컬 테스트 필요작업
+
+index.html, cases.html, play.html, result.html, css 전체, js 전체 변경.
+
+play.js는 playtest.js 파일로 변경.
+
+play.html에서 episode-switcher, gtn-open-api-model, api-key 관련, btn-test-unlock-all-req 삭제.
