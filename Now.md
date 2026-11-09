@@ -15,7 +15,6 @@ public/
     ├─ config.js         # USE_MOCK, firebaseConfig
     ├─ firebase.js       # 인증 (Google / Naver / mock)
     ├─ api.js            # fetch 래퍼 (토큰 자동 첨부)
-    ├─ mock.js           # 백엔드 대용 가짜 API
     ├─ state.js          # 간단한 전역 상태
     ├─ ui.js             # 헤더, 토스트
     ├─ chat.js           # 채팅 UI
@@ -25,16 +24,4 @@ public/
     ├─ index.js  cases.js  play.js  result.js  auth-complete.js
 ```
 
-현재 프론트엔드는 목업 형태로 구현됨. 백엔드 구현 필요.
-
-제미나이 API 연동 확인. 현재는 API 키 보안으로 인하여 로컬에서만 동작하도록 했음.
-
-
-
-- 로컬 테스트 필요작업
-
-index.html, cases.html, play.html, result.html, css 전체, js 전체 변경.
-
-play.js는 playtest.js 파일로 변경.
-
-play.html에서 episode-switcher, gtn-open-api-model, api-key 관련, btn-test-unlock-all-req 삭제.
+현재 detective-visual-scene-v5 기반의 UI로 구현 완료. Gemini 연결해둔 상태.
