@@ -122,41 +122,6 @@ const EPISODES_DB = {
         { mode: 'investigate', target: 'doctor_bag', clueId: 'c13', iconType: 'bag', label: '🧰 오진석의 의료 가방 (c13)', x: 77, y: 56 }
       ]
     },
-    secret: {
-      culprit: 'doctor',
-      clues: {
-        c04: { id: 'c04', title: '약장의 새 약병', location: '서재 약장', role: '핵심', text: '서재 약장에 새 약병이 있다. 병 모양은 평소 약과 같지만 라벨이 이상하게 반듯하다.' },
-        c05: { id: 'c05', title: '집사의 약 일지', location: '집사 진술', role: '핵심', text: "일지에 '17:10 오 박사님이 약병을 새 것으로 교체', '16:30~17:10 회장님과 오 박사님 면담, 문 닫힘'이라고 적혀 있다." },
-        c06: { id: 'c06', title: '복도 CCTV 기록', location: '보안실', role: '핵심', text: '21:55 지훈, 22:50 집사(쟁반), 23:20 오진석(서재 복도), 23:38 소영이 서재 방향으로 지나갔다.' },
-        c07: { id: 'c07', title: '유언장 초안', location: '서재 책상', role: '유도', text: '변호사가 작성한 미서명 초안. 기부 비중이 커지고 부인과 장남의 몫이 줄어든다. 서명이 없어 효력이 없다.' },
-        c08: { id: 'c08', title: '지훈의 빚 독촉 문자', location: '지훈 진술', role: '유도', text: "사채업자의 독촉 문자 '금요일까지 4억 입금'." },
-        c09: { id: 'c09', title: '비서의 경비 장부', location: '소영 진술', role: '유도', text: '지난 1년간 약 1,200만 원이 개인 용도로 처리된 흔적이 있다.' },
-        c10: { id: 'c10', title: '회장의 수첩', location: '서재 책상 서랍', role: '핵심(동기)', text: "'오 원장 건 — 청구 부풀리기 확인됨. 이사회 전에 직접 통보. 거부하면 신고.' 16:30 날짜 메모." },
-        c11: { id: 'c11', title: '약병 라벨의 이상', location: '윤세라 지적', role: '핵심', text: '약국 인쇄 라벨이 아니라 일반 프린터로 출력한 것이다. 약국 로고와 조제 번호가 없다.' },
-        c12: { id: 'c12', title: '약국 확인', location: '한소영 통화', role: '핵심', text: '소영이 약국에 전화해 확인했다. 이번 달에는 교체 처방이 나간 적이 없다.' },
-        c13: { id: 'c13', title: '의료 가방 속 병', location: '오진석의 가방', role: '결정적 증거', text: '오진석의 가방에 약국 라벨이 붙은 원래 약병과 빈 라벨 용지가 있다.' },
-        c14: { id: 'c14', title: '서재의 안쪽 문', location: '서재', role: '유도', text: '안방과 서재를 잇는 안쪽 문이 있다. CCTV에 잡히지 않는 통로이며 최근 열린 흔적이 있다.' }
-      },
-      unlockRules: [
-        { clueId: 'c04', type: 'investigate', target: 'medicine_cabinet' },
-        { clueId: 'c05', type: 'ask', suspect: 'butler', keywords: ['약', '일지', '복용', '쟁반'] },
-        { clueId: 'c06', type: 'investigate', target: 'cctv' },
-        { clueId: 'c07', type: 'investigate', target: 'study_desk' },
-        { clueId: 'c08', type: 'ask', suspect: 'son', keywords: ['빚', '돈', '도박', '문자'] },
-        { clueId: 'c09', type: 'ask', suspect: 'secretary', keywords: ['장부', '횡령', '경비', '돈'] },
-        { clueId: 'c10', type: 'investigate', target: 'desk_drawer', requires: ['c05'] },
-        { clueId: 'c11', type: 'show', suspect: 'wife', clue: 'c04' },
-        { clueId: 'c12', type: 'show', suspect: 'secretary', clue: 'c11' },
-        { clueId: 'c13', type: 'investigate', target: 'doctor_bag', requires: ['c11', 'c12'] },
-        { clueId: 'c14', type: 'investigate', target: 'inner_door' }
-      ],
-      hints: [
-        '누가 가장 의심스러운지가 아니라, 누가 가장 쉽게 약에 손댈 수 있었는지 생각해 보세요.',
-        '집사의 일지에는 17시 무렵 약과 관련된 기록이 있습니다.',
-        '약병의 라벨을 아는 사람에게 약병을 보여 주세요. 그리고 그 사실을 확인해 줄 사람을 찾으세요.'
-      ],
-      solutionExplain: '범인은 주치의 오진석이다. 회장이 병원 청구 비리를 신고하겠다고 통보하자(16:30), 집사가 자리를 비운 17:05~17:12에 서재 약장의 심장약 병을 바꿔치기했다.'
-    }
   },
 
   'gallery-002': {
