@@ -29,6 +29,8 @@ public/
 
 제미나이 API 연동 확인. 현재는 API 키 보안으로 인하여 로컬에서만 동작하도록 했음.
 
+
+
 - 로컬 테스트 필요작업
 
 index.html, cases.html, play.html, result.html, css 전체, js 전체 변경.
