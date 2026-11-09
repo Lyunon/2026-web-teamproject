@@ -1,29 +1,99 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>결과 · 추리 게임</title>
-  <link rel="stylesheet" href="css/base.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 추리 수사관 - 수사 결과 및 랭킹</title>
+  <link rel="stylesheet" href="./css/base.css" />
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="cases.html">추리 게임</a>
-    <div id="user-area"></div>
+
+  <header class="app-header">
+    <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부 · 최종 수사 보고서</div>
+    <div class="header-right">
+      <a href="./cases.html" class="btn">📂 사건 목록으로</a>
+    </div>
   </header>
-  <main class="container narrow">
-    <section class="card result">
-      <p id="result-case" class="muted"></p>
-      <h1 id="result-title"></h1>
-      <p id="result-culprit"></p>
-      <p id="result-score" class="score"></p>
-      <h3>사건 해설</h3>
-      <p id="result-explain" class="explain"></p>
-      <div class="dialog-actions">
-        <a class="btn btn-primary" href="cases.html">다른 사건 보기</a>
-      </div>
+
+  <main class="result-container">
+
+    <!-- 1. 정답 / 오답 판정 배너 -->
+    <section id="result-banner" class="result-banner success">
+      <h1 id="verdict-title" class="result-verdict-title">🎉 범인을 찾았습니다!</h1>
+      <p id="verdict-subtitle" class="result-verdict-sub">
+        지목한 용의자 <strong>[이조카]</strong>는 진범이 맞습니다. 발코니 창틀의 온실 배양토와 수정된 유언장 초안이 결정적 증거가 되었습니다.
+      </p>
     </section>
+
+    <!-- 2. 점수 산출 내역 & 데이터베이스 연동 랭킹 보드 -->
+    <div class="result-grid">
+
+      <!-- 왼쪽: 타이머 & 힌트 반영 점수 산출 카드 -->
+      <section class="score-card">
+        <h3>
+          <span>📊 최종 수사 점수 산출</span>
+          <span id="score-status-badge" style="font-size: 0.8rem; color: var(--text-muted);">정답 해결</span>
+        </h3>
+
+        <ul class="score-breakdown">
+          <li class="score-row">
+            <span>기본 사건 해결 점수</span>
+            <strong id="base-score-val">+1,000점</strong>
+          </li>
+          <li class="score-row">
+            <span>⏱️ 해결 소요 시간 (<span id="elapsed-time-label">01:20</span>)</span>
+            <strong id="time-bonus-val" style="color: var(--success);">+420점 (스피드 보너스)</strong>
+          </li>
+          <li class="score-row">
+            <span>💡 힌트 사용 차감 (<span id="hint-used-label">0회</span> × -150점)</span>
+            <strong id="hint-penalty-val" style="color: var(--danger);">-0점</strong>
+          </li>
+        </ul>
+
+        <div class="score-total-box">
+          <span>최종 획득 점수</span>
+          <span id="final-score-val" class="score-total-value">1,420점</span>
+        </div>
+
+        <p style="margin-top: 14px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+          * 빨리 사건을 해결할수록 스피드 보너스가 높게 부여되며, 사용한 힌트 횟수만큼 점수가 차감됩니다.<br />
+          * 산출된 점수는 Firestore 데이터베이스 <code>rankings</code> 컬렉션에 자동 기록됩니다.
+        </p>
+      </section>
+
+      <!-- 오른쪽: 데이터베이스 연동 수사관 랭킹 보드 -->
+      <section class="ranking-card">
+        <h3>
+          <span>🏆 실시간 수사관 명예의 전당 (DB 랭킹)</span>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Firestore 연동 영역</span>
+        </h3>
+
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>수사관</th>
+              <th>해결 시간</th>
+              <th>힌트</th>
+              <th>최종 점수</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-tbody">
+            <!-- result.js에서 내 점수와 합쳐 자동 정렬 렌더링 -->
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+
+    <!-- 3. 하단 이동 버튼 -->
+    <div class="result-actions">
+      <a href="./play.html" class="btn">🔄 이 사건 다시 수사하기</a>
+      <a href="./cases.html" class="btn btn-primary">📂 다른 사건 에피소드 고르기</a>
+    </div>
+
   </main>
-  <script type="module" src="js/result.js"></script>
+
+  <script defer src="./js/result.js"></script>
 </body>
 </html>
