@@ -25,3 +25,5 @@ public/
 ```
 
 현재 detective-visual-scene-v5 기반의 UI로 구현 완료. Gemini 연결해둔 상태.
+
+튜토리얼 기능 부재. 해당 기능 반영해볼 것.
