@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --env-file=.env server.mjs"
+    "dev": "node --env-file=.env server.mjs",
+    "test:signup": "node --experimental-vm-modules --test test/signup.test.mjs"
   },
   "repository": {
     "type": "git",

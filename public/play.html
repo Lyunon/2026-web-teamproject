@@ -6,8 +6,9 @@
   <title>AI 추리 수사관 - 동적 사건 현장 & 멀티 에피소드 (v5)</title>
   <link rel="stylesheet" href="./css/base.css" />
   <link rel="stylesheet" href="./css/play.css" />
+  <script type="module" src="./js/guard.js"></script>
 </head>
-<body>
+<body class="auth-pending">
 
   <!-- 상단 공통 헤더 (에피소드 전환 셀렉터 포함) -->
   <header class="app-header">
@@ -15,6 +16,8 @@
       <span id="case-header-title">📁 사건 [mansion-001] : 송림 저택의 마지막 밤</span>
     </div>
     <div class="header-right">
+      <span data-player-name>회원 확인 중…</span>
+      <button id="btn-logout" class="btn" type="button">로그아웃</button>
       <span id="current-screen-badge" class="status-pill">현재 화면: 사건 현장 탐색</span>
       <span class="status-pill">⏱️ 경과 시간: <strong id="timer-display">00:00</strong></span>
       <button id="btn-use-hint" class="btn" type="button">

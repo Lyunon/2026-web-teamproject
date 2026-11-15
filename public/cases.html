@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 추리 수사관 - 사건 목록</title>
   <link rel="stylesheet" href="./css/base.css" />
+  <script type="module" src="./js/guard.js"></script>
 </head>
-<body>
+<body class="auth-pending">
 
   <header class="app-header">
     <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부</div>
     <div class="header-right">
-      <span id="user-display">접속 수사관: 김형사님</span>
-      <a href="./index.html" class="btn">로그아웃</a>
+      <span id="user-display">회원 확인 중…</span>
+      <button id="btn-logout" class="btn" type="button">로그아웃</button>
     </div>
   </header>
 

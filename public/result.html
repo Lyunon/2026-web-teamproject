@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 추리 수사관 - 수사 결과 및 랭킹</title>
   <link rel="stylesheet" href="./css/base.css" />
+  <script type="module" src="./js/guard.js"></script>
 </head>
-<body>
+<body class="auth-pending">
 
   <header class="app-header">
     <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부 · 최종 수사 보고서</div>
     <div class="header-right">
+      <span data-player-name>회원 확인 중…</span>
+      <button id="btn-logout" class="btn" type="button">로그아웃</button>
       <a href="./cases.html" class="btn">📂 사건 목록으로</a>
     </div>
   </header>
@@ -57,15 +60,15 @@
 
         <p style="margin-top: 14px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
           * 빨리 사건을 해결할수록 스피드 보너스가 높게 부여되며, 사용한 힌트 횟수만큼 점수가 차감됩니다.<br />
-          * 산출된 점수는 Firestore 데이터베이스 <code>rankings</code> 컬렉션에 자동 기록됩니다.
+          * 현재 랭킹은 예시 데이터이며, 실제 점수 저장 기능은 준비 중입니다.
         </p>
       </section>
 
       <!-- 오른쪽: 데이터베이스 연동 수사관 랭킹 보드 -->
       <section class="ranking-card">
         <h3>
-          <span>🏆 실시간 수사관 명예의 전당 (DB 랭킹)</span>
-          <span style="font-size: 0.78rem; color: var(--text-muted);">Firestore 연동 영역</span>
+          <span>🏆 수사관 명예의 전당</span>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">미리보기 · 예시 랭킹</span>
         </h3>
 
         <table class="ranking-table">
