@@ -13,8 +13,6 @@
   --success: #3ecf8e;
   --google-bg: #ffffff;
   --google-text: #1f1f1f;
-  --naver-bg: #03c75a;
-  --naver-text: #ffffff;
 }
 
 * {
@@ -284,10 +282,6 @@ a {
   color: var(--google-text);
 }
 
-.btn-naver {
-  background-color: var(--naver-bg);
-  color: var(--naver-text);
-}
 
 .login-footer-note {
   margin-top: 20px;
@@ -539,4 +533,25 @@ a {
   .result-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Google 가입 및 회원 확인 */
+[hidden] { display: none !important; }
+button:disabled { cursor: wait; opacity: .55; transform: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.auth-pending main { visibility: hidden; }
+.signup-card fieldset { border: 0; text-align: left; min-width: 0; }
+.signup-card label { display: block; font-weight: 700; margin-bottom: 10px; }
+.signup-card input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-dark); color: var(--text-main); padding: 14px; font: inherit; }
+.signup-card input[aria-invalid="true"] { border-color: var(--danger); }
+.login-card .field-help { font-size: .8rem; margin: 10px 0 24px; }
+.signup-submit { width: 100%; padding: 14px; }
+.login-card .auth-message { margin: 18px 0 0; font-size: .88rem; overflow-wrap: anywhere; }
+.auth-message:empty { display: none; }
+.account-switch { margin-top: 16px; }
+.login-card .login-footer-note { margin-bottom: 0; font-size: .8rem; }
+@media (max-width: 480px) {
+  .login-wrapper { padding: 18px; }
+  .login-card { padding: 30px 22px; }
+  .app-header { padding: 16px 18px; }
 }

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신규 수사관 등록 · AI 추리 수사본부</title>
+  <link rel="stylesheet" href="./css/base.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a href="./index.html" class="brand-logo">🕵️‍♂️ AI 추리 수사본부</a>
+    <div class="header-right">당신의 첫 번째 사건이 기다립니다</div>
+  </header>
+  <main class="login-wrapper">
+    <section class="login-card signup-card" aria-labelledby="signup-title">
+      <span class="login-badge">DETECTIVE REGISTRATION</span>
+      <h1 id="signup-title">신규 수사관 등록</h1>
+      <p>수사에 사용할 이름을 정해 주세요.<br />닉네임은 게임과 랭킹에 표시됩니다.</p>
+      <form id="signup-form">
+        <fieldset id="signup-fields" disabled>
+          <label for="nickname">탐정 닉네임</label>
+          <input id="nickname" name="nickname" type="text" autocomplete="nickname" required minlength="2" maxlength="12" placeholder="예: 명탐정준" aria-describedby="nickname-help signup-message" />
+          <p id="nickname-help" class="field-help">한글·영문·숫자·밑줄(_) 2~12자, 공백 제외<br />다른 수사관과 같은 닉네임도 사용할 수 있어요.</p>
+          <button class="btn btn-primary signup-submit" type="submit">등록하고 수사 시작하기</button>
+        </fieldset>
+      </form>
+      <p id="signup-message" class="auth-message" role="status" aria-live="polite">계정을 확인하고 있어요…</p>
+      <button id="btn-signup-retry" class="btn" type="button" hidden>다시 확인하기</button>
+      <button id="btn-change-account" class="btn account-switch" type="button">다른 구글 계정으로 로그인</button>
+      <p class="login-footer-note">구글 계정 인증으로 가입합니다.<br />별도의 비밀번호는 필요하지 않아요.</p>
+    </section>
+  </main>
+  <script type="module" src="./js/signup.js"></script>
+</body>
+</html>

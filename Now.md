@@ -1,40 +1,8 @@
-# 현 진행 상황을 메모하는 마크다운 파일입니다.
+# 현재 진행 상황
 
-현재 폴더 구조
-```
-public/
-├─ index.html            # 랜딩 + 로그인
-├─ cases.html            # 사건 목록
-├─ play.html             # 게임 화면
-├─ result.html           # 결과 + 해설
-├─ auth-complete.html    # 네이버 로그인 마무리 (커스텀 토큰)
-├─ css/
-│   ├─ base.css
-│   └─ play.css
-└─ js/
-    ├─ config.js         # USE_MOCK, firebaseConfig
-    ├─ firebase.js       # 인증 (Google / Naver / mock)
-    ├─ api.js            # fetch 래퍼 (토큰 자동 첨부)
-    ├─ mock.js           # 백엔드 대용 가짜 API
-    ├─ state.js          # 간단한 전역 상태
-    ├─ ui.js             # 헤더, 토스트
-    ├─ chat.js           # 채팅 UI
-    ├─ clues.js          # 단서 보관함
-    ├─ notes.js          # 추리 노트
-    ├─ accuse.js         # 범인 지목
-    ├─ index.js  cases.js  play.js  result.js  auth-complete.js
-```
-
-현재 프론트엔드는 목업 형태로 구현됨. 백엔드 구현 필요.
-
-제미나이 API 연동 확인. 현재는 API 키 보안으로 인하여 로컬에서만 동작하도록 했음.
-
-
-
-- 로컬 테스트 필요작업
-
-index.html, cases.html, play.html, result.html, css 전체, js 전체 변경.
-
-play.js는 playtest.js 파일로 변경.
-
-play.html에서 episode-switcher, gtn-open-api-model, api-key 관련, btn-test-unlock-all-req 삭제.
+- Google 로그인 + 최초 탐정 닉네임 등록 구현.
+- 회원 프로필: Firestore `users/{uid}`, `nickname`, `createdAt`.
+- 사건 선택/게임/결과 페이지에 로그인 및 가입 완료 확인 연결.
+- 네이버 로그인 UI와 인증 코드 제거. 옛 콜백 주소는 로그인 화면으로 이동.
+- 결과 랭킹은 아직 샘플 데이터이며 실제 점수 저장은 별도 작업.
+- 적용/검증 안내: `docs/signup-setup.md`.

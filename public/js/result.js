@@ -1,6 +1,7 @@
 // public/js/result.js - mansion-001.json 기준 결과 판정, 점수(범인 50 + 수법 25 + 동기 25 + 스피드 보너스 - 힌트 감점), DB 랭킹
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await window.authReady) return;
   const params = new URLSearchParams(window.location.search);
   const storedRaw = localStorage.getItem('last_case_result');
   const stored = storedRaw ? JSON.parse(storedRaw) : null;
@@ -11,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const isMotiveCorrect = params.get('motive') !== null ? params.get('motive') === '1' : (stored ? stored.isMotiveCorrect : true);
   const elapsedSeconds = Number(params.get('time') ?? (stored ? stored.elapsedSeconds : 95));
   const hintCount = Number(params.get('hints') ?? (stored ? stored.hintCount : 0));
-  const userProvider = localStorage.getItem('mock_user_provider') || 'Google';
+  const nickname = window.playerProfile.nickname;
 
   const solutionExplain = (stored && stored.solutionExplain) ||
     '범인은 주치의 오진석이다. 회장이 병원 청구 비리를 신고하겠다고 통보하자(16:30), 집사가 자리를 비운 17:05~17:12에 서재 약장의 심장약 병을 겉모양이 같은 병으로 바꿔 놓았다. 회장은 평소처럼 23:05경 그 약을 복용하고 숨졌다. 오진석은 23:20에 약병을 회수하러 왔다가 한소영의 기척에 물러났고, 자연사를 주장해 부검을 막으려 했다. 유언장은 서명되지 않았고 오진석은 상속인이 아니므로 유산 갈등은 오답 유도였다.';
@@ -67,15 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('final-score-val').textContent = `${finalScore.toLocaleString()}점`;
 
   const defaultRankings = [
-    { name: '셜록홈즈 (Google)', timeSec: 52, hints: 0, score: 1496, isMe: false },
-    { name: '명탐정코난 (Naver)', timeSec: 88, hints: 0, score: 1424, isMe: false },
-    { name: '포와로 (Google)', timeSec: 115, hints: 1, score: 1320, isMe: false },
-    { name: '김전일 (Naver)', timeSec: 170, hints: 2, score: 1160, isMe: false }
+    { name: '셜록홈즈', timeSec: 52, hints: 0, score: 1496, isMe: false },
+    { name: '명탐정코난', timeSec: 88, hints: 0, score: 1424, isMe: false },
+    { name: '포와로', timeSec: 115, hints: 1, score: 1320, isMe: false },
+    { name: '김전일', timeSec: 170, hints: 2, score: 1160, isMe: false }
   ];
 
   if (isCorrect) {
     defaultRankings.push({
-      name: `김형사님 (${userProvider}) [나]`,
+      name: `${nickname} [나]`,
       timeSec: elapsedSeconds,
       hints: hintCount,
       score: finalScore,

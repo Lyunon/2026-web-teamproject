@@ -2,8 +2,6 @@
 
 해당 레포지토리는 2026 웹프로그래밍 팀프로젝트 레포지토리입니다.
 
-.env 파일, API 키들이 평문으로 작성되어 있는 json 파일이 필요하기에 레포지토리 상태가 Private로 되어 있으니 LLM을 활용할 거면 따로 커넥터 기능을 사용하는 것을 권장합니다.
-
 페이지 : https://2026-web-teamproject.vercel.app
 
 개발 간트 차트 : https://docs.google.com/spreadsheets/d/1tj85U68tbwi6uvfH21Ie25zttXo8McmHcbgiYQZhJ6w/edit?gid=0#gid=0
@@ -39,3 +37,8 @@
 ├─ .env.example            # 키 이름만 적은 템플릿 (커밋)
 └─ .gitignore              # .env.local 제외
 ```
+
+## Google 회원가입
+
+Google 인증 후 최초 한 번 탐정 닉네임을 등록합니다. 가입 설정과 테스트 방법은
+[회원가입 적용 안내](docs/signup-setup.md)를 확인하세요.

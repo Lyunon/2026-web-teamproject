@@ -1,10 +1,6 @@
 // public/js/cases.js - 사건 목록 및 Gemini API 에피소드 생성 목업 이벤트
-document.addEventListener('DOMContentLoaded', () => {
-  const provider = localStorage.getItem('mock_user_provider');
-  const userDisplay = document.getElementById('user-display');
-  if (provider && userDisplay) {
-    userDisplay.textContent = `접속 수사관: 김형사님 (${provider} 로그인됨)`;
-  }
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!await window.authReady) return;
 
   const genBtn = document.getElementById('btn-generate-episode');
   const episodeList = document.getElementById('episode-list');
