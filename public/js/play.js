@@ -227,6 +227,7 @@ const EPISODES_DB = {
 // (위쪽 SCENE_THEME_BACKGROUNDS, OBJECT_SVG_LIBRARY, EPISODES_DB 는 그대로 두되, EPISODES_DB 에서 secret 을 지운다.)
 // 서버 API: /api/start, /api/investigate, /api/ask, /api/hint, /api/accuse
 document.addEventListener('DOMContentLoaded', async () => {
+  if (!await window.authReady) return;
   const CASE_ID = 'mansion-001';
   const STORAGE_KEY = `case_state_${CASE_ID}`;
   // 현장 배치(배경, 오브젝트 위치)만 쓴다. 정답·해금 규칙은 서버에만 있다.

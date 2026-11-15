@@ -1,45 +1,34 @@
-// Firebase Auth 도우미. firebase-config.js 가 비어 있으면 Firebase 를 불러오지 않고 목업 모드로 동작한다.
+// Google 로그인과 모든 화면에서 하나의 Firebase 앱/인증 인스턴스를 공유한다.
 import { firebaseConfig } from "./firebase-config.js";
-
-const SDK_VERSION = "10.12.2"; // 바꾸려면 firebase 공식 문서에서 쓸 수 있는 버전을 확인한다.
-const BASE = `https://www.gstatic.com/firebasejs/${SDK_VERSION}`;
-
-export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
-
-let ctxPromise = null;
-function getCtx() {
-  if (!isConfigured) return null;
+const SDK = "https://www.gstatic.com/firebasejs/10.12.2";
+export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && !firebaseConfig.apiKey.startsWith("YOUR_"));
+let ctxPromise;
+export function getFirebaseContext() {
+  if (!isConfigured) throw new Error("Firebase 설정이 필요합니다.");
   ctxPromise ??= (async () => {
-    const [{ initializeApp }, A] = await Promise.all([
-      import(`${BASE}/firebase-app.js`),
-      import(`${BASE}/firebase-auth.js`),
+    const [appSDK, A] = await Promise.all([
+      import(`${SDK}/firebase-app.js`), import(`${SDK}/firebase-auth.js`),
     ]);
-    const app = initializeApp(firebaseConfig);
-    return { A, auth: A.getAuth(app) };
-  })();
+    const app = appSDK.getApps().length ? appSDK.getApp() : appSDK.initializeApp(firebaseConfig);
+    return { app, A, auth: A.getAuth(app) };
+  })().catch((error) => { ctxPromise = null; throw error; });
   return ctxPromise;
 }
-
-// 로그인 상태가 확정될 때까지 기다렸다가 사용자(없으면 null)를 돌려준다.
 export async function waitForUser() {
-  const ctx = await getCtx();
-  if (!ctx) return null;
-  return new Promise((resolve) => {
-    const off = ctx.A.onAuthStateChanged(ctx.auth, (user) => {
-      off();
-      resolve(user);
-    });
-  });
+  const { auth, A } = await getFirebaseContext();
+  await auth.authStateReady();
+  return auth.currentUser;
 }
-
 export async function signInWithGoogle() {
-  const ctx = await getCtx();
-  if (!ctx) throw new Error("Firebase 설정이 비어 있습니다.");
-  const provider = new ctx.A.GoogleAuthProvider();
-  return ctx.A.signInWithPopup(ctx.auth, provider);
+  const { auth, A } = await getFirebaseContext();
+  return A.signInWithPopup(auth, new A.GoogleAuthProvider());
 }
-
 export async function signOutUser() {
-  const ctx = await getCtx();
-  if (ctx) await ctx.A.signOut(ctx.auth);
+  const { auth, A } = await getFirebaseContext();
+  await A.signOut(auth);
+}
+export async function getIdToken() {
+  const user = await waitForUser();
+  if (!user) throw new Error("로그인이 필요합니다.");
+  return user.getIdToken();
 }

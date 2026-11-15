@@ -1,30 +1,8 @@
-# 현 진행 상황을 메모하는 마크다운 파일입니다.
+# 현재 진행 상황
 
-현재 폴더 구조
-```
-public/
-├─ index.html            # 랜딩 + 로그인
-├─ cases.html            # 사건 목록
-├─ play.html             # 게임 화면
-├─ result.html           # 결과 + 해설
-├─ auth-complete.html    # 네이버 로그인 마무리 (커스텀 토큰)
-├─ css/
-│   ├─ base.css
-│   └─ play.css
-└─ js/
-    ├─ config.js         # USE_MOCK, firebaseConfig
-    ├─ firebase.js       # 인증 (Google / Naver / mock)
-    ├─ api.js            # fetch 래퍼 (토큰 자동 첨부)
-    ├─ state.js          # 간단한 전역 상태
-    ├─ ui.js             # 헤더, 토스트
-    ├─ chat.js           # 채팅 UI
-    ├─ clues.js          # 단서 보관함
-    ├─ notes.js          # 추리 노트
-    ├─ accuse.js         # 범인 지목
-    ├─ index.js  cases.js  play.js  result.js  auth-complete.js
-```
-
-현재 detective-visual-scene-v5 기반의 UI로 구현 완료. Gemini 연결해둔 상태.
-구글 연동 완료. 회원가입 과정 개발 필요.
-
-튜토리얼 기능 부재. 해당 기능 반영해볼 것.
+- Google 로그인 + 최초 탐정 닉네임 등록 구현.
+- 회원 프로필: Firestore `users/{uid}`, `nickname`, `createdAt`.
+- 사건 선택/게임/결과 페이지에 로그인 및 가입 완료 확인 연결.
+- 네이버 로그인 UI와 인증 코드 제거. 옛 콜백 주소는 로그인 화면으로 이동.
+- 결과 랭킹은 아직 샘플 데이터이며 실제 점수 저장은 별도 작업.
+- 적용/검증 안내: `docs/signup-setup.md`.

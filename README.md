@@ -39,3 +39,8 @@
 ├─ .env.example            # 키 이름만 적은 템플릿 (커밋)
 └─ .gitignore              # .env.local 제외
 ```
+
+## Google 회원가입
+
+Google 인증 후 최초 한 번 탐정 닉네임을 등록합니다. 가입 설정과 테스트 방법은
+[회원가입 적용 안내](docs/signup-setup.md)를 확인하세요.

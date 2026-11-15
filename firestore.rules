@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 회원가입 전용 규칙. 기존 프로젝트 규칙에 이 users 블록을 병합한다.
+    match /users/{uid} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      allow get: if isOwner();
+      allow list: if false;
+      allow create: if isOwner()
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.resource.data.keys().hasAll(['nickname', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['nickname', 'createdAt'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.matches('^[가-힣a-zA-Z0-9_]{2,12}$')
+        && request.resource.data.createdAt == request.time;
+      // 이번 기능은 최초 등록만 지원한다. 점수·권한 등의 필드는 쓰지 못한다.
+      allow update, delete: if false;
+    }
+  }
+}
