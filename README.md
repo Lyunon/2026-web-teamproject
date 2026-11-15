@@ -2,8 +2,6 @@
 
 해당 레포지토리는 2026 웹프로그래밍 팀프로젝트 레포지토리입니다.
 
-.env 파일, API 키들이 평문으로 작성되어 있는 json 파일이 필요하기에 레포지토리 상태가 Private로 되어 있으니 LLM을 활용할 거면 따로 커넥터 기능을 사용하는 것을 권장합니다.
-
 페이지 : https://2026-web-teamproject.vercel.app
 
 개발 간트 차트 : https://docs.google.com/spreadsheets/d/1tj85U68tbwi6uvfH21Ie25zttXo8McmHcbgiYQZhJ6w/edit?gid=0#gid=0
