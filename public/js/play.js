@@ -788,7 +788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const r = await api('accuse', { caseId: CASE_ID, suspectId: checked.value, hintCount });
       clearInterval(timerInterval);
       const result = {
-        playerUid: player.uid,
+        playerUid: uid,
         caseId: CASE_ID,
         caseTitle: startData.title,
         accusedSuspect: suspectLabel(checked.value),
