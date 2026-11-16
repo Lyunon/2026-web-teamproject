@@ -2,7 +2,7 @@ import { KAKAO_JAVASCRIPT_KEY, SDK_URL, SDK_INTEGRITY, createSharePayload } from
 
 let sdkPromise;
 export function loadKakaoSDK() {
-  if (window.Kakao?.Share && window.Kakao?.init) return Promise.resolve(window.Kakao);
+  if (typeof window.Kakao?.init === 'function' && typeof window.Kakao?.isInitialized === 'function') return Promise.resolve(window.Kakao);
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -15,7 +15,7 @@ export function loadKakaoSDK() {
     script.onerror = fail;
     script.onload = () => {
       clearTimeout(timer);
-      if (window.Kakao?.Share && window.Kakao?.init) resolve(window.Kakao);
+      if (typeof window.Kakao?.init === 'function' && typeof window.Kakao?.isInitialized === 'function') resolve(window.Kakao);
       else fail();
     };
     document.head.append(script);
@@ -40,6 +40,7 @@ export function mountKakaoShare(result) {
     try {
       sdk = await loadKakaoSDK();
       if (!sdk.isInitialized()) sdk.init(KAKAO_JAVASCRIPT_KEY);
+      if (typeof sdk.Share?.sendDefault !== 'function') throw new Error('카카오톡 공유 초기화에 실패했어요. 페이지를 새로고침해 주세요.');
       button.textContent = '카카오톡으로 결과 공유';
       message.textContent = '닉네임과 플레이 기록이 공유됩니다. 범인과 해설은 포함하지 않아요.';
     } catch (error) {
