@@ -67,3 +67,29 @@ test('SDK 공유 호출 오류를 사용자에게 표시', async () => {
   h.mod.mountKakaoShare(result);await tick();h.nodes['btn-kakao-share'].events.click();
   assert.match(h.nodes['share-message'].textContent,/팝업/);
 });
+
+test('실제 SDK 순서: 로드 직후 Share가 없어도 init 이후 생기면 공유 준비 성공', async () => {
+  let sent;
+  let initialized=false;
+  const h=await uiHarness(undefined);
+  h.mod.mountKakaoShare(result);
+  await tick();
+  window.Kakao={
+    isInitialized:()=>initialized,
+    init(){ initialized=true;this.Share={sendDefault(payload){sent=payload;}}; }
+  };
+  assert.equal(window.Kakao.Share,undefined);
+  h.scripts[0].onload();
+  await tick();
+  assert.equal(initialized,true);
+  assert.equal(h.nodes['btn-kakao-share'].disabled,false);
+  assert.equal(h.nodes['btn-kakao-share'].textContent,'카카오톡으로 결과 공유');
+  h.nodes['btn-kakao-share'].events.click();
+  assert.equal(sent.text,createSharePayload(result).text);
+});
+test('이미 로드된 미초기화 SDK도 다시 다운로드하지 않고 init 실행', async () => {
+  const sdk={isInitialized:()=>false,init(){this.Share={sendDefault(){}};}};
+  const h=await uiHarness(sdk);h.mod.mountKakaoShare(result);await tick();
+  assert.equal(h.scripts.length,0);assert.equal(typeof sdk.Share.sendDefault,'function');
+  assert.equal(h.nodes['btn-kakao-share'].textContent,'카카오톡으로 결과 공유');
+});
