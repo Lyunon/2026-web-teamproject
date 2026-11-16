@@ -1,10 +1,12 @@
 // public/js/result.js - mansion-001.json 기준 결과 판정, 점수(범인 50 + 수법 25 + 동기 25 + 스피드 보너스 - 힌트 감점), DB 랭킹
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!await window.authReady) return;
+  const player = await window.authReady;
+  if (!player) return;
   const params = new URLSearchParams(window.location.search);
-  const storedRaw = localStorage.getItem('last_case_result');
-  const stored = storedRaw ? JSON.parse(storedRaw) : null;
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem('last_case_result') || 'null'); }
+  catch { /* 손상된 저장 정보로 결과 페이지 전체가 중단되지 않도록 한다. */ }
 
   const accusedSuspect = params.get('suspect') || (stored && stored.accusedSuspect) || '오진석 (주치의)';
   const isCorrect = params.get('correct') !== null ? params.get('correct') === '1' : (stored ? stored.isCorrect : true);
@@ -98,4 +100,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       </tr>
     `)
     .join('');
+  // 화면에 표시한 최종 점수를 그대로 공유한다. 예시 랭킹과 정답은 전달하지 않는다.
+  try {
+    const { canShareResult } = await import('./kakao-share-data.js');
+    const displayed = { isCorrect, isMethodCorrect, isMotiveCorrect, elapsedSeconds, hintCount };
+    if (canShareResult(stored, player.uid, displayed)) {
+      const { mountKakaoShare } = await import('./kakao-share.js');
+      mountKakaoShare({ nickname, caseTitle: stored.caseTitle, isCorrect, finalScore, elapsedSeconds, hintCount });
+    } else {
+      document.getElementById('share-message').textContent = '이 계정으로 게임을 한 번 완료하면 결과를 공유할 수 있어요.';
+    }
+  } catch {
+    document.getElementById('share-message').textContent = '공유 기능을 준비하지 못했어요. 페이지를 새로고침해 주세요.';
+  }
+
 });

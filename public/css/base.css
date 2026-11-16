@@ -555,3 +555,13 @@ button:disabled { cursor: wait; opacity: .55; transform: none; }
   .login-card { padding: 30px 22px; }
   .app-header { padding: 16px 18px; }
 }
+
+/* 결과 공유 */
+.share-card { padding: 28px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-panel); }
+.share-card h2 { margin-bottom: 10px; font-size: 1.3rem; }
+.share-card p { line-height: 1.6; color: var(--text-muted); }
+.share-preview { margin: 20px 0; padding: 18px; border-radius: 10px; background: var(--bg-dark); color: var(--text-main); font: inherit; font-size: .95rem; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.btn-kakao-share { margin-top: 18px; background: #fee500; border-color: #fee500; color: #191919; }
+.btn-kakao-share:hover { background: #f4dc00; border-color: #f4dc00; color: #191919; }
+.share-card .share-message { margin-top: 12px; font-size: .85rem; }
+@media (max-width: 480px) { .share-card { padding: 20px; } .btn-kakao-share { width: 100%; } }
