@@ -227,10 +227,12 @@ const EPISODES_DB = {
 // (위쪽 SCENE_THEME_BACKGROUNDS, OBJECT_SVG_LIBRARY, EPISODES_DB 는 그대로 두되, EPISODES_DB 에서 secret 을 지운다.)
 // 서버 API: /api/start, /api/investigate, /api/ask, /api/hint, /api/accuse
 document.addEventListener('DOMContentLoaded', async () => {
-  const player = await window.authReady;
-  if (!player) return;
+  const authUser = await window.authReady; // guard.js 가 로그인·가입을 먼저 확인한다
+  if (!authUser) return;
+  const uid = authUser.uid;
   const CASE_ID = 'mansion-001';
-  const STORAGE_KEY = `case_state_${CASE_ID}`;
+  const STORAGE_KEY = `case_state_${uid}_${CASE_ID}`; // 계정마다 저장을 나눈다
+
   // 현장 배치(배경, 오브젝트 위치)만 쓴다. 정답·해금 규칙은 서버에만 있다.
   const view = EPISODES_DB[CASE_ID].public;
 
@@ -307,20 +309,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ---------- 저장 / 복원 ----------
-  function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        clues: Array.from(unlockedClueIds).map((id) => allCluesMap[id]).filter(Boolean),
-        unlocked: Array.from(unlockedClueIds),
-        investigated: Array.from(investigatedTargets),
-        chatLogs, apiHistory, hintCount, hintsShown, elapsedSeconds,
-      }));
-    } catch { /* 저장 공간이 없으면 건너뜀 */ }
+    // 이 브라우저(localStorage)에는 즉시, Firestore 에는 save.js 가 모아서 저장한다.
+  let ready = false; // 저장본을 불러오기 전에는 저장하지 않는다 (빈 상태로 덮어쓰기 방지)
+  function snapshot() {
+    return {
+      clues: Array.from(unlockedClueIds).map((id) => allCluesMap[id]).filter(Boolean),
+      unlocked: Array.from(unlockedClueIds),
+      investigated: Array.from(investigatedTargets),
+      chatLogs, apiHistory, hintCount, hintsShown, elapsedSeconds,
+    };
   }
-  function restore() {
+  function save() {
+    if (!ready) return;
+    const s = snapshot();
     try {
-      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-      if (!s) return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, savedAt: Date.now() }));
+    } catch { /* 저장 공간이 없으면 건너뜀 */ }
+    window.cloudSave?.schedule(s);
+  }
+  function applySave(s) {
+    try {
       const saved = new Map((s.clues || []).map((c) => [c.id, c]));
       (s.unlocked || []).forEach((id) => {
         if (saved.has(id)) { allCluesMap[id] = normClue(saved.get(id)); unlockedClueIds.add(id); }
@@ -335,6 +343,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       elapsedSeconds = Number(s.elapsedSeconds) || 0;
     } catch { /* 저장본이 깨졌으면 무시 */ }
   }
+  function readLocal() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { return null; }
+  }
+  // 이 브라우저와 클라우드 중 더 최근 저장본을 고르고, 이어할지 묻는다.
+  async function restoreLatest() {
+    const local = readLocal();
+    window.cloudSave?.init(uid, CASE_ID);
+    const cloud = await window.cloudSave?.load(); // { savedAt, state } 또는 null
+    let pick = local;
+    let at = Number(local?.savedAt) || 0;
+    if (cloud && cloud.savedAt > at) { pick = cloud.state; at = cloud.savedAt; }
+    const has = window.cloudSave ? window.cloudSave.hasProgress(pick) : Boolean(pick);
+    if (has) {
+      const when = at ? new Date(at).toLocaleString('ko-KR') : '알 수 없음';
+      if (confirm(`저장된 진행 상황이 있습니다. (마지막 저장: ${when})\n이어서 할까요? [취소]를 누르면 처음부터 시작합니다.`)) {
+        applySave(pick);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        await window.cloudSave?.clear(false); // 새 게임은 계속 저장한다
+      }
+    }
+    ready = true;
+  }
+
 
   // ---------- 타이머 ----------
   const timerDisplay = $('timer-display');
@@ -772,6 +804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       localStorage.setItem('last_case_result', JSON.stringify(result));
       localStorage.removeItem(STORAGE_KEY);
+      await window.cloudSave?.clear(); // 사건이 끝났으니 클라우드 저장본도 지운다
       const params = new URLSearchParams({
         suspect: result.accusedSuspect,
         correct: r.correct ? '1' : '0',
@@ -788,9 +821,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ---------- 처음부터 다시 ----------
-  $('btn-test-reset-scene')?.addEventListener('click', () => {
+  $('btn-test-reset-scene')?.addEventListener('click', async () => {
     if (!confirm('진행 상황을 지우고 처음부터 다시 시작할까요?')) return;
+    ready = false;
+    clearInterval(timerInterval);
     localStorage.removeItem(STORAGE_KEY);
+    await window.cloudSave?.clear();
     window.location.reload();
   });
 
@@ -806,7 +842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   suspects = startData.suspects || [];
   addClues(startData.clues);
   suspects.forEach((s) => { chatLogs[s.id] = []; apiHistory[s.id] = []; });
-  restore();
+  await restoreLatest();
   currentSuspectId = suspects[0]?.id || '';
 
   $('case-header-title').textContent = `📁 ${startData.title}`;
