@@ -25,6 +25,6 @@
   "homepage": "https://github.com/Lyunon/2026-web-teamproject#readme",
   "dependencies": {
     "@google/genai": "^2.32.0",
-    "firebase-admin": "^14.5.0"
+    "firebase-admin": "^13.10.0"
   }
 }
