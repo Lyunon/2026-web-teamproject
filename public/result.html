@@ -45,21 +45,21 @@
           </li>
           <li class="score-row">
             <span>⏱️ 해결 소요 시간 (<span id="elapsed-time-label">01:20</span>)</span>
-            <strong id="time-bonus-val" style="color: var(--success);">+420점 (스피드 보너스)</strong>
+            <strong id="time-penalty-val" style="color: var(--danger);">-0점</strong>
           </li>
           <li class="score-row">
-            <span>💡 힌트 사용 차감 (<span id="hint-used-label">0회</span> × -150점)</span>
+            <span>💡 힌트 사용 차감 (<span id="hint-used-label">0회</span> × -100점)</span>
             <strong id="hint-penalty-val" style="color: var(--danger);">-0점</strong>
           </li>
         </ul>
 
         <div class="score-total-box">
           <span>최종 획득 점수</span>
-          <span id="final-score-val" class="score-total-value">1,420점</span>
+          <span id="final-score-val" class="score-total-value">1,000점</span>
         </div>
 
         <p style="margin-top: 14px; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
-          * 빨리 사건을 해결할수록 스피드 보너스가 높게 부여되며, 사용한 힌트 횟수만큼 점수가 차감됩니다.<br />
+          * 해결 점수 1,000점에서 10분까지 0점, 10분 초과~18분 미만 200점, 18분 이상 350점을 차감합니다. 힌트는 회당 100점 차감하며, 실패 및 최저 점수는 0점입니다.<br />
           * 현재 랭킹은 예시 데이터이며, 실제 점수 저장 기능은 준비 중입니다.
         </p>
       </section>

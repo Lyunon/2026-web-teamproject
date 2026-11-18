@@ -49,11 +49,11 @@ const keyOf = (s) => {
 
 const docRef = (h) => h.F.doc(h.db, "users", ctx.uid, "saves", ctx.caseId);
 
-// 이어할 만한 진행이 있는가 (조사, 대화, 힌트 중 하나라도 했는가)
+// 시간도 진행 상황: 단서를 누르지 않았어도 1분 대기와 감점 시간을 이어간다.
 export function hasProgress(s) {
   if (!s) return false;
   const talked = Object.values(s.chatLogs || {}).some((a) => Array.isArray(a) && a.length > 0);
-  return talked || (s.investigated?.length || 0) > 0 || (Number(s.hintCount) || 0) > 0;
+  return Number(s.elapsedSeconds) > 0 || talked || (s.investigated?.length || 0) > 0 || (Number(s.hintCount) || 0) > 0;
 }
 
 export function init(uid, caseId) {
@@ -93,13 +93,13 @@ export function schedule(state) {
 }
 
 // 지금 바로 저장. 창을 닫을 때도 불리지만 그 시점의 쓰기는 완료가 보장되지 않는다.
-export async function flush() {
+export async function flush(force = false) {
   clearTimeout(timer);
   timer = null;
   if (stopped || loadFailed || !ctx || !latest) return;
   const data = latest;
   const key = keyOf(data);
-  if (key === lastKey && Date.now() - lastWriteAt < TIME_ONLY_MS) return;
+  if (!force && key === lastKey && Date.now() - lastWriteAt < TIME_ONLY_MS) return;
   if (!hasProgress(data)) return;
   try {
     const h = await getDb();
