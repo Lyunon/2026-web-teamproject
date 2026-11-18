@@ -271,11 +271,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cleanLabel = (label) => String(label || '').replace(/\s*\(c\d+\)\s*/gi, ' ').trim();
 
   async function api(path, body) {
+    let token;
+    try {
+      token = await authUser.getIdToken(); // 만료가 가까우면 Firebase 가 새 토큰을 받아 준다
+    } catch {
+      throw new Error('로그인 정보를 확인하지 못했습니다. 새로고침해 주세요.');
+    }
     let res;
     try {
       res = await fetch(`/api/${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
     } catch {
@@ -813,8 +819,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const submittedSeconds = elapsedSeconds;
       const submittedHints = hintCount;
       const r = await api('accuse', { caseId: CASE_ID, suspectId: checked.value, hintCount: submittedHints, elapsedSeconds: submittedSeconds });
-      elapsedSeconds = submittedSeconds;
-      hintCount = submittedHints;
+      elapsedSeconds = r.elapsedSeconds;
+      hintCount = r.hintCount;
       finished = true;
       clearInterval(timerInterval);
       const result = {
@@ -829,6 +835,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         timePenalty: r.timePenalty,
         hintPenalty: r.hintPenalty,
         scoringVersion: r.scoringVersion,
+        ranked: r.ranked,
         elapsedSeconds,
         hintCount,
         solutionExplain: r.solutionExplain,
