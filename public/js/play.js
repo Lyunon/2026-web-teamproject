@@ -229,6 +229,7 @@ const EPISODES_DB = {
 document.addEventListener('DOMContentLoaded', async () => {
   const authUser = await window.authReady; // guard.js 가 로그인·가입을 먼저 확인한다
   if (!authUser) return;
+  const { canAccuse, createPlayClock, validCount } = await import('./scoring.js');
   const uid = authUser.uid;
   const CASE_ID = 'mansion-001';
   const STORAGE_KEY = `case_state_${uid}_${CASE_ID}`; // 계정마다 저장을 나눈다
@@ -338,9 +339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (Array.isArray(s.chatLogs?.[sp.id])) chatLogs[sp.id] = s.chatLogs[sp.id];
         if (Array.isArray(s.apiHistory?.[sp.id])) apiHistory[sp.id] = s.apiHistory[sp.id];
       }
-      hintCount = Number(s.hintCount) || 0;
+      hintCount = validCount(s.hintCount) ? s.hintCount : 0;
       hintsShown = Array.isArray(s.hintsShown) ? s.hintsShown : [];
-      elapsedSeconds = Number(s.elapsedSeconds) || 0;
+      elapsedSeconds = validCount(s.elapsedSeconds) ? s.elapsedSeconds : 0;
     } catch { /* 저장본이 깨졌으면 무시 */ }
   }
   function readLocal() {
@@ -371,11 +372,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ---------- 타이머 ----------
   const timerDisplay = $('timer-display');
   const formatTime = (sec) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
-  const timerInterval = setInterval(() => {
-    elapsedSeconds += 1;
+  let clock = null;
+  let timerInterval = null;
+  let finished = false;
+  const accuseButton = $('btn-open-accuse');
+  function updateTimer() {
+    if (clock && !finished) elapsedSeconds = clock();
     if (timerDisplay) timerDisplay.textContent = formatTime(elapsedSeconds);
-    if (elapsedSeconds % 5 === 0) save();
-  }, 1000);
+    const enabled = ready && canAccuse(elapsedSeconds) && !finished;
+    if (accuseButton) {
+      accuseButton.disabled = !enabled;
+      accuseButton.textContent = enabled ? '🚨 범인 지목하기' :
+        `🔒 범인 지목까지 ${formatTime(Math.max(0, 60 - elapsedSeconds))}`;
+    }
+  }
+  function persistTime() {
+    if (!ready || finished) return;
+    updateTimer();
+    save();
+    void window.cloudSave?.flush(true);
+  }
+  window.addEventListener('pagehide', persistTime);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persistTime();
+  });
+  updateTimer();
 
   // ---------- 화면 전환 ----------
   function switchScreen(key) {
@@ -774,18 +795,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       box.appendChild(label);
     });
   }
-  $('btn-open-accuse')?.addEventListener('click', () => accuseModal.classList.add('open'));
+  accuseButton?.addEventListener('click', () => {
+    updateTimer();
+    if (ready && canAccuse(elapsedSeconds) && !finished) accuseModal.classList.add('open');
+  });
   $('btn-cancel-accuse')?.addEventListener('click', () => accuseModal.classList.remove('open'));
 
   let accusing = false;
   $('accuse-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (accusing) return;
+    updateTimer();
+    if (accusing || !ready || !canAccuse(elapsedSeconds) || finished) return;
     const checked = document.querySelector('input[name="accused_suspect"]:checked');
     if (!checked) return;
     accusing = true;
     try {
-      const r = await api('accuse', { caseId: CASE_ID, suspectId: checked.value, hintCount });
+      const submittedSeconds = elapsedSeconds;
+      const submittedHints = hintCount;
+      const r = await api('accuse', { caseId: CASE_ID, suspectId: checked.value, hintCount: submittedHints, elapsedSeconds: submittedSeconds });
+      elapsedSeconds = submittedSeconds;
+      hintCount = submittedHints;
+      finished = true;
       clearInterval(timerInterval);
       const result = {
         playerUid: uid,
@@ -796,6 +826,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         base: r.base,
         penalty: r.penalty,
         score: r.score,
+        timePenalty: r.timePenalty,
+        hintPenalty: r.hintPenalty,
+        scoringVersion: r.scoringVersion,
         elapsedSeconds,
         hintCount,
         solutionExplain: r.solutionExplain,
@@ -843,6 +876,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   addClues(startData.clues);
   suspects.forEach((s) => { chatLogs[s.id] = []; apiHistory[s.id] = []; });
   await restoreLatest();
+  clock = createPlayClock(elapsedSeconds);
+  updateTimer();
+  let lastSavedSecond = elapsedSeconds;
+  timerInterval = setInterval(() => {
+    updateTimer();
+    if (elapsedSeconds - lastSavedSecond >= 5) {
+      save();
+      lastSavedSecond = elapsedSeconds;
+    }
+  }, 1000);
   currentSuspectId = suspects[0]?.id || '';
 
   $('case-header-title').textContent = `📁 ${startData.title}`;
