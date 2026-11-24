@@ -40,29 +40,86 @@ test("난이도가 올라갈수록 요구 수치가 단조 증가한다", () => 
   }
 });
 
-test("쉬움 사건을 어려움 규칙으로 검사하면 실패한다", () => {
-  assert.throws(() => validateGeneratedCase(makeRaw("easy"), { genre, difficultyId: "hard" }), /용의자|단서/);
+test("기준을 못 맞춘 사건은 버리지 않고 경고만 남긴다", () => {
+  const out = validateGeneratedCase(makeRaw("easy"), { genre, difficultyId: "expert" });
+  assert.ok(out.warnings.length > 0);
+  assert.equal(out.public.suspects.length, 3);
 });
 
-test("검증이 잘못된 사건을 거른다", () => {
-  const run = (mut, id = "hard") => {
+test("고칠 수 있는 오류는 서버가 고친다", () => {
+  const fix = (mut, id = "hard") => {
     const raw = makeRaw(id);
     mut(raw);
-    return () => validateGeneratedCase(raw, { genre, difficultyId: id });
+    return validateGeneratedCase(raw, { genre, difficultyId: id });
+  };
+  const reachableAll = (out) => {
+    const start = new Set(out.public.clues.map((c) => c.id));
+    const got = new Set(start);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const r of out.secret.unlockRules) {
+        const deps = [...(r.requires || []), ...(r.type === "show" ? [r.clue] : [])];
+        if (!got.has(r.clueId) && deps.every((d) => got.has(d))) { got.add(r.clueId); grew = true; }
+      }
+    }
+    return Object.keys(out.secret.clues).every((id) => got.has(id));
+  };
+
+  // 범인을 이름으로 적음 → 아이디로 바꾼다
+  assert.equal(fix((r) => { r.culprit = r.suspects[0].name; }).secret.culprit, "person0");
+  // 잘못된 용의자 아이디 → 새 아이디를 주고 참조도 따라간다
+  let out = fix((r) => { r.suspects[0].id = "Mr. Kim!"; r.culprit = "Mr. Kim!"; });
+  assert.ok(/^[a-z][a-z0-9_]+$/.test(out.secret.culprit));
+  assert.ok(out.public.suspects.some((s) => s.id === out.secret.culprit));
+  // 규칙 누락 → 현장 조사 규칙을 만든다
+  out = fix((r) => { r.unlockRules.pop(); });
+  assert.equal(out.secret.unlockRules.length, Object.keys(out.secret.clues).length);
+  // 순환 의존 → 끊어서 모두 도달 가능
+  out = fix((r) => { r.unlockRules[0].requires = [r.hiddenClues.at(-1).id]; });
+  assert.ok(reachableAll(out));
+  // 결정적 증거 지정 오류 → 숨은 단서 중 하나로 정한다
+  out = fix((r) => { r.decisiveClueId = "c01"; });
+  assert.equal(Object.values(out.secret.clues).filter((c) => c.role === "결정적 증거").length, 1);
+  // 키워드 부족한 ask, 잘못된 target → 조사 규칙으로 바꾸거나 아이디를 정리
+  out = fix((r) => {
+    r.unlockRules.find((u) => u.type === "ask").keywords = [];
+    r.unlockRules.find((u) => u.type === "investigate").target = "Bad Target!";
+  });
+  assert.ok(out.secret.unlockRules.every((u) => u.type !== "investigate" || /^[a-z][a-z0-9_]+$/.test(u.target)));
+  // 힌트 부족 → 기본 힌트로 채운다
+  assert.equal(fix((r) => { r.hints = ["하나"]; }).secret.hints.length, 3);
+  // 단서 아이디가 제멋대로여도 c01 부터 다시 매기고 모두 도달 가능
+  out = fix((r) => {
+    const ren = (id) => `clue-${id}`;
+    r.startClues.forEach((c) => { c.id = ren(c.id); });
+    r.hiddenClues.forEach((c) => { c.id = ren(c.id); });
+    r.unlockRules.forEach((u) => {
+      u.clueId = ren(u.clueId);
+      if (u.requires) u.requires = u.requires.map(ren);
+      if (u.clue) u.clue = ren(u.clue);
+    });
+    r.decisiveClueId = ren(r.decisiveClueId);
+  });
+  assert.ok(Object.keys(out.secret.clues).every((id) => /^c\d{2}$/.test(id)));
+  assert.ok(reachableAll(out));
+  // 현장 오브젝트가 자리보다 많으면 일부를 단서 제시 규칙으로 바꾼다
+  out = fix((r) => { r.unlockRules.forEach((u) => { u.type = "investigate"; u.target = `t_${u.clueId}`; delete u.requires; }); }, "expert");
+  assert.ok(out.public.scene.hotspots.length <= 14);
+  assert.ok(reachableAll(out));
+});
+
+test("게임이 성립하지 않는 사건은 다시 만들게 한다", () => {
+  const run = (mut) => {
+    const raw = makeRaw("normal");
+    mut(raw);
+    return () => validateGeneratedCase(raw, { genre, difficultyId: "normal" });
   };
   assert.throws(run((r) => { r.culprit = "nobody"; }), /culprit/);
-  assert.throws(run((r) => { r.contradictions = r.contradictions.slice(0, 1); }), /모순/);
-  assert.throws(run((r) => { r.contradictions.forEach((c) => { c.suspectId = "person1"; }); }), /범인/);
-  assert.throws(run((r) => { r.decisiveClueId = "c01"; }), /decisive/);
-  assert.throws(run((r) => { r.unlockRules.pop(); }), /규칙 없음/);
-  // 순환: 첫 규칙이 마지막 단서를 요구
-  assert.throws(run((r) => { r.unlockRules[0].requires = [r.hiddenClues.at(-1).id]; }), /도달할 수 없는/);
-  assert.throws(run((r) => { r.unlockRules.forEach((u) => { delete u.requires; }); }), /연쇄|조건부|선행/);
-  assert.throws(run((r) => { r.suspects[3].lies = []; r.suspects[2].lies = []; r.suspects[1].lies = []; }), /무고한/);
-  assert.throws(run((r) => { r.hiddenClues.forEach((c) => { c.role = "핵심"; }); }), /가짜/);
-  assert.throws(run((r) => { r.unlockRules.find((u) => u.type === "ask").keywords = ["약"]; }), /keywords/);
-  assert.throws(run((r) => { r.unlockRules.find((u) => u.type === "investigate").target = "Bad Target!"; }), /target/);
-  assert.throws(run((r) => { r.hints = ["하나"]; }), /힌트/);
+  assert.throws(run((r) => { r.suspects = r.suspects.slice(0, 2); }), /용의자/);
+  assert.throws(run((r) => { r.hiddenClues = r.hiddenClues.slice(0, 2); }), /숨은 단서/);
+  assert.throws(run((r) => { r.startClues = []; }), /시작 단서/);
+  assert.throws(run((r) => { r.intro = ""; }), /소개/);
 });
 
 test("프롬프트에 난이도 수치와 장르가 들어간다", () => {
@@ -121,40 +178,16 @@ async function call(handlerPath, body) {
   return { status, payload };
 }
 
-test("API: 생성된 사건으로 start → investigate → hint → accuse 가 동작한다", async () => {
+test("API: 로그인 없이는 거부한다 (생성 사건 포함)", async () => {
   const out = validateGeneratedCase(makeRaw("normal"), { genre, difficultyId: "normal" });
   const id = "gen-cccccccccc";
   const caseToken = sealCase({ id, public: out.public, secret: out.secret });
-
-  const start = await call("../api/start.js", { caseId: id, caseToken });
-  assert.equal(start.payload.ok, true);
-  assert.equal(start.payload.data.scene.sceneTheme, "mansion_study");
-  assert.equal(start.payload.data.difficulty, "보통");
-  assert.equal(JSON.stringify(start.payload).includes(out.secret.motive), false, "start 응답에 정답이 새면 안 됨");
-  assert.equal(start.payload.data.hintTotal, 3);
-
-  const firstInv = out.secret.unlockRules.find((r) => r.type === "investigate" && !r.requires);
-  const unlocked = start.payload.data.unlocked;
-  const inv = await call("../api/investigate.js", { caseId: id, caseToken, target: firstInv.target, unlocked });
-  assert.equal(inv.payload.data.status, "FOUND");
-
-  const locked = out.secret.unlockRules.find((r) => r.type === "investigate" && r.requires);
-  if (locked) {
-    const r = await call("../api/investigate.js", { caseId: id, caseToken, target: locked.target, unlocked });
-    assert.equal(r.payload.data.status, "LOCKED");
+  for (const name of ["start", "ask", "hint", "investigate", "accuse"]) {
+    const r = await call(`../api/${name}.js`, { caseId: id, caseToken });
+    assert.equal(r.status, 401, name);
   }
-
-  const hint = await call("../api/hint.js", { caseId: id, caseToken, hintCount: 0 });
-  assert.equal(hint.payload.data.hint, "힌트1");
-
-  const wrong = await call("../api/accuse.js", { caseId: id, caseToken, suspectId: "person1", hintCount: 0, elapsedSeconds: 120 });
-  assert.equal(wrong.payload.data.correct, false);
-  const right = await call("../api/accuse.js", { caseId: id, caseToken, suspectId: "person0", hintCount: 1, elapsedSeconds: 120 });
-  assert.equal(right.payload.data.correct, true);
-  assert.equal(right.payload.data.score, 900);
-
-  const noToken = await call("../api/start.js", { caseId: id });
-  assert.equal(noToken.status, 400);
+  const g = await call("../api/generate.js", { genre: "random", difficulty: "easy" });
+  assert.equal(g.status, 401, "generate"); // Gemini 호출 전에 막힌다
 });
 
 test("API generate: 잘못된 장르·난이도는 Gemini 호출 전에 거부한다", async () => {

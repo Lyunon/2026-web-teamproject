@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return tr;
   }
   async function loadRanking() {
+    if (caseId.startsWith('gen-')) return messageRow('Gemini가 만든 사건은 랭킹에 등록되지 않습니다.');
     messageRow('랭킹을 불러오는 중…');
     try {
       const token = await player.getIdToken();
