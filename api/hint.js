@@ -9,7 +9,7 @@ import { sessionRef } from "./_lib/session.js";
 
 export default route(["POST"], async ({ body, req }) => {
   const user = await requireUser(req);
-  const { caseSecret } = loadCase(body.caseId, body.caseToken);
+  const { caseSecret } = loadCase(body.caseId);
   const used = cleanHintCount(body.hintCount);
   const hints = caseSecret.hints;
 

@@ -10,7 +10,7 @@ import { ensureSession } from "./_lib/session.js";
 
 export default route(["POST"], async ({ body, req }) => {
   const user = await requireUser(req);
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
   await ensureSession(user.uid, body.caseId);
   const unlocked = initialUnlocked(casePublic);
 
@@ -18,7 +18,7 @@ export default route(["POST"], async ({ body, req }) => {
     caseId: body.caseId,
     title: casePublic.title,
     difficulty: casePublic.difficulty ?? null,
-    scene: casePublic.scene ?? null, // 생성된 사건만 있음. 기존 사건은 play.js 가 자체 배치를 쓴다.
+    scene: casePublic.scene ?? null, // 사건 JSON 에 scene 이 있으면 쓰고, 없으면 play.js 의 자체 배치를 쓴다.
     intro: casePublic.intro,
     suspects: casePublic.suspects,
     clues: unlocked.map((id) => publicClue(clueMap[id])),
