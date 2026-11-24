@@ -4,6 +4,7 @@
 //   difficulty: easy | normal | hard | expert
 
 import { route, HttpError } from "./_lib/http.js";
+import { requireUser } from "./_lib/firebase.js";
 import { GeminiError } from "./_lib/gemini.js";
 import { generateCase } from "./_lib/caseGenerator.js";
 import { sealCase } from "./_lib/caseToken.js";
@@ -12,8 +13,15 @@ import { GENRES, RANDOM_GENRE } from "../public/js/genres.js";
 
 const GENRE_IDS = [...GENRES.map((g) => g.id), RANDOM_GENRE.id];
 
+// 베타 기간에는 원인 코드(예: TIMEOUT)를 문구 끝에 붙여 화면만 보고도 원인을 알 수 있게 한다. 키·프롬프트는 노출하지 않는다.
 function toHttpError(err) {
   const code = err instanceof GeminiError ? err.code : "UNKNOWN";
+  const e = mapError(code);
+  e.message = `${e.message} (오류 코드: ${code})`;
+  return e;
+}
+
+function mapError(code) {
   switch (code) {
     case "RATE_LIMIT":
       return new HttpError(429, "사건 생성 요청이 몰렸습니다. 잠시 후 다시 시도해 주세요.");
@@ -29,11 +37,13 @@ function toHttpError(err) {
   }
 }
 
-export default route(["POST"], async ({ body }) => {
+export default route(["POST"], async ({ body, req }) => {
   const genre = String(body.genre ?? "");
   const difficulty = String(body.difficulty ?? "");
   if (!GENRE_IDS.includes(genre)) throw new HttpError(400, "장르를 선택해 주세요.");
   if (!Object.hasOwn(DIFFICULTY_RULES, difficulty)) throw new HttpError(400, "난이도를 선택해 주세요.");
+
+  await requireUser(req); // 로그인한 사용자만 Gemini 를 쓸 수 있다
 
   let made;
   try {

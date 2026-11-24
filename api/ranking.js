@@ -8,6 +8,7 @@ import { rankingCol, rankingRef } from "./_lib/session.js";
 
 export default route(["GET"], async ({ query, req }) => {
   const caseId = String(query.caseId || "");
+  if (caseId.startsWith("gen-")) return { caseId, top: [], me: null, generated: true }; // Gemini 생성 사건은 랭킹 없음
   loadCase(caseId); // 있는 사건인지만 확인한다
   const limit = Math.min(Math.max(Math.floor(Number(query.limit)) || 10, 1), 50);
 

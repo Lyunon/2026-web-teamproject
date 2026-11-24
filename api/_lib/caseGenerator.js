@@ -19,10 +19,11 @@ const ICON_EMOJI = {
 const CLUE_ROLES = ["핵심", "유도", "핵심(동기)", "결정적 증거"];
 const RULE_TYPES = ["investigate", "ask", "show"];
 
-// play.js 의 현장 화면에서 겹치지 않는 오브젝트 자리 (x, y 는 % 단위, 최대 10개)
+// play.js 의 현장 화면에서 겹치지 않는 오브젝트 자리 (x, y 는 % 단위, 최대 14개)
 const HOTSPOT_SLOTS = [
   [4.5, 24], [18, 9], [35.5, 11], [19.5, 44], [38.5, 43],
   [53.5, 42], [55.5, 64], [75.5, 10], [77, 56], [18, 62],
+  [88, 32], [36, 64], [64, 20], [89, 72],
 ];
 
 // ---------- 무작위 설정 (같은 장르 요청마다 다른 사건이 나오도록 서버가 뽑는다) ----------
@@ -190,188 +191,229 @@ export function buildPrompt({ genre, difficultyId }) {
   ].join("\n");
 }
 
-// ---------- 검증 ----------
+// ---------- 검증·보정 ----------
+// Gemini(특히 가벼운 모델)는 숫자 조건을 한두 개씩 놓치기 쉽다. 사건 전체를 버리면 시간 안에 완성하지 못하므로
+// 고칠 수 있는 것은 서버가 고치고(아이디 정리, 빠진 규칙 보충, 순환 끊기, 힌트 채우기 등),
+// 게임이 성립하지 않는 경우(범인 없음, 용의자·단서가 너무 적음)만 GeminiError(BAD_RESPONSE)로 다시 만들게 한다.
 const bad = (msg) => new GeminiError("BAD_RESPONSE", `사건 검증 실패: ${msg}`);
 const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const strList = (v, maxItems, maxLen) =>
   (Array.isArray(v) ? v : []).map((s) => str(s, maxLen)).filter(Boolean).slice(0, maxItems);
 const SUSPECT_ID = /^[a-z][a-z0-9_]{1,19}$/;
-const CLUE_ID = /^c\d{2}$/;
 const TARGET_ID = /^[a-z][a-z0-9_]{1,30}$/;
+const pad2 = (n) => `c${String(n).padStart(2, "0")}`;
 
-function normClue(c, role) {
+const MIN_SUSPECTS = 3, MAX_SUSPECTS = 6;
+const MIN_HIDDEN = 3, MAX_HIDDEN = 10;
+const FALLBACK_HINTS = [
+  "용의자들의 진술 중 단서와 맞지 않는 부분을 찾아보세요.",
+  "아직 조사하지 않은 현장 물건이나, 단서를 보여 주지 않은 용의자가 있는지 확인해 보세요.",
+  "범인만 알 수 있었던 사실이 무엇인지 생각해 보세요.",
+];
+
+function normClue(c, role, id) {
   const iconType = ICON_TYPES.includes(c?.iconType) ? c.iconType : "document";
+  const title = str(c?.title, 30) || "이름 없는 단서";
   return {
-    id: str(c?.id, 6),
-    title: str(c?.title, 30),
-    location: str(c?.location, 30),
+    id,
+    title,
+    location: str(c?.location, 30) || "현장",
     role,
     text: str(c?.text, 300),
     iconType,
-    label: str(c?.label, 20) || str(c?.title, 20),
+    label: str(c?.label, 20) || title.slice(0, 20),
   };
 }
 
 /**
- * Gemini 가 만든 사건을 검증·정리한다. 규칙 위반이면 GeminiError(BAD_RESPONSE).
- * @returns {{ public: object, secret: object }}
+ * Gemini 가 만든 사건을 보정·검증한다. 게임이 성립하지 않으면 GeminiError(BAD_RESPONSE).
+ * @returns {{ public: object, secret: object, warnings: string[] }}
  */
 export function validateGeneratedCase(raw, { genre, difficultyId }) {
   const cfg = DIFFICULTY_RULES[difficultyId];
   if (!cfg) throw bad("알 수 없는 난이도");
   if (!raw || typeof raw !== "object") throw bad("객체가 아님");
+  const warnings = []; // 난이도 기준을 못 맞춘 부분 (서버 로그용)
 
-  // --- 용의자
-  const suspectsIn = Array.isArray(raw.suspects) ? raw.suspects : [];
-  if (suspectsIn.length !== cfg.suspects) throw bad(`용의자는 ${cfg.suspects}명이어야 함 (${suspectsIn.length})`);
-  const suspectIds = new Set();
+  // --- 용의자: 아이디를 정리하고 원래 아이디 → 새 아이디 표를 만든다
+  const suspectsIn = (Array.isArray(raw.suspects) ? raw.suspects : []).filter((s) => str(s?.name, 12));
+  if (suspectsIn.length < MIN_SUSPECTS) throw bad(`용의자가 너무 적음 (${suspectsIn.length})`);
+  if (suspectsIn.length !== cfg.suspects) warnings.push(`용의자 ${suspectsIn.length}명 (기준 ${cfg.suspects})`);
+  const sMap = new Map();
   const suspects = [];
   const personas = {};
-  for (const s of suspectsIn) {
-    const id = str(s?.id, 20);
-    if (!SUSPECT_ID.test(id) || suspectIds.has(id)) throw bad(`잘못된 용의자 id: ${id}`);
-    suspectIds.add(id);
+  suspectsIn.slice(0, MAX_SUSPECTS).forEach((s, i) => {
+    const orig = str(s.id, 40);
+    let id = orig.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/^[^a-z]+/, "").slice(0, 20);
+    if (!SUSPECT_ID.test(id) || personas[id]) id = `suspect_${i + 1}`;
+    if (orig) sMap.set(orig, id);
+    sMap.set(id, id);
     const name = str(s.name, 12);
-    const role = str(s.role, 20);
-    const publicBio = str(s.publicBio, 120);
-    const personality = str(s.personality, 160);
-    const knows = strList(s.knows, 6, 120);
-    if (!name || !role || !publicBio || !personality || !knows.length) throw bad(`용의자 정보 부족: ${id}`);
-    suspects.push({ id, name, role, publicBio });
+    sMap.set(name, id); // Gemini 가 아이디 대신 이름을 적는 경우
+    const publicBio = str(s.publicBio, 120) || str(s.role, 20) || "사건 관계자";
+    suspects.push({ id, name, role: str(s.role, 20) || "관계자", publicBio });
     personas[id] = {
-      personality,
-      knows,
+      personality: str(s.personality, 160) || "차분한 존댓말을 쓴다.",
+      knows: strList(s.knows, 6, 120).length ? strList(s.knows, 6, 120) : [publicBio],
       hides: strList(s.hides, 6, 120),
       lies: strList(s.lies, 5, 160),
       reveals: strList(s.reveals, 6, 160),
-      showReactions: {}, // 단서 id 확정 뒤에 채운다
+      showReactions: {},
       _showRaw: Array.isArray(s.showReactions) ? s.showReactions : [],
     };
-  }
-  const culprit = str(raw.culprit, 20);
-  if (!suspectIds.has(culprit)) throw bad("culprit 가 용의자 목록에 없음");
+  });
+  const sid = (v) => sMap.get(str(v, 40)) || null;
+  const culprit = sid(raw.culprit);
+  if (!culprit) throw bad("culprit 가 용의자 목록에 없음");
 
-  // --- 단서
-  const startIn = Array.isArray(raw.startClues) ? raw.startClues : [];
-  const hiddenIn = Array.isArray(raw.hiddenClues) ? raw.hiddenClues : [];
-  if (startIn.length < cfg.startClues[0] || startIn.length > cfg.startClues[1]) {
-    throw bad(`시작 단서 수 ${startIn.length}`);
-  }
-  if (hiddenIn.length < cfg.hidden[0] || hiddenIn.length > cfg.hidden[1]) {
-    throw bad(`숨은 단서 수 ${hiddenIn.length}`);
-  }
-  const startClues = startIn.map((c) => normClue(c, "현장 기본"));
-  const hiddenClues = hiddenIn.map((c) =>
-    normClue(c, CLUE_ROLES.includes(c?.role) ? c.role : "핵심")
-  );
-  const allIds = new Set();
-  for (const c of [...startClues, ...hiddenClues]) {
-    if (!CLUE_ID.test(c.id) || allIds.has(c.id)) throw bad(`잘못된 단서 id: ${c.id}`);
-    if (!c.title || !c.text) throw bad(`단서 내용 부족: ${c.id}`);
-    allIds.add(c.id);
-  }
+  // --- 단서: c01 부터 다시 번호를 매기고 원래 아이디 → 새 아이디 표를 만든다
+  const startIn = (Array.isArray(raw.startClues) ? raw.startClues : []).filter((c) => str(c?.text, 300));
+  const hiddenIn = (Array.isArray(raw.hiddenClues) ? raw.hiddenClues : []).filter((c) => str(c?.text, 300));
+  if (startIn.length < 1) throw bad("시작 단서 없음");
+  if (hiddenIn.length < MIN_HIDDEN) throw bad(`숨은 단서가 너무 적음 (${hiddenIn.length})`);
+  const startUse = startIn.slice(0, 4);
+  const hiddenUse = hiddenIn.slice(0, MAX_HIDDEN);
+  if (startUse.length < cfg.startClues[0] || startUse.length > cfg.startClues[1]) warnings.push(`시작 단서 ${startUse.length}`);
+  if (hiddenUse.length < cfg.hidden[0]) warnings.push(`숨은 단서 ${hiddenUse.length}`);
+  const cMap = new Map();
+  let n = 0;
+  const startClues = startUse.map((c) => {
+    const id = pad2(++n);
+    if (str(c.id, 10)) cMap.set(str(c.id, 10), id);
+    return normClue(c, "현장 기본", id);
+  });
+  const hiddenClues = hiddenUse.map((c) => {
+    const id = pad2(++n);
+    if (str(c.id, 10)) cMap.set(str(c.id, 10), id);
+    return normClue(c, CLUE_ROLES.includes(c?.role) ? c.role : "핵심", id);
+  });
+  for (const c of [...startClues, ...hiddenClues]) cMap.set(c.id, cMap.get(c.id) || c.id);
+  const allIds = new Set([...startClues, ...hiddenClues].map((c) => c.id));
   const startIds = new Set(startClues.map((c) => c.id));
   const hiddenIds = new Set(hiddenClues.map((c) => c.id));
+  const cid = (v) => {
+    const id = cMap.get(str(v, 10));
+    return id && allIds.has(id) ? id : null;
+  };
+  if (hiddenClues.filter((c) => c.role === "유도").length < cfg.redHerrings) warnings.push("유도 단서 부족");
 
-  if (hiddenClues.filter((c) => c.role === "유도").length < cfg.redHerrings) throw bad("가짜(유도) 단서 부족");
-  const decisiveId = str(raw.decisiveClueId, 6);
-  if (!hiddenIds.has(decisiveId)) throw bad("decisiveClueId 가 숨은 단서가 아님");
-  hiddenClues.forEach((c) => { if (c.id === decisiveId) c.role = "결정적 증거"; });
-
-  // --- 해금 규칙
-  const rulesIn = Array.isArray(raw.unlockRules) ? raw.unlockRules : [];
-  const rules = [];
+  // --- 해금 규칙: 잘못된 규칙은 현장 조사 규칙으로 바꾸고, 빠진 단서는 규칙을 만들어 준다
   const ruleFor = new Map();
   const targets = new Set();
-  for (const r of rulesIn) {
-    const clueId = str(r?.clueId, 6);
-    if (!hiddenIds.has(clueId) || ruleFor.has(clueId)) continue; // 중복·잘못된 규칙은 건너뛴다
-    const type = r.type;
-    if (!RULE_TYPES.includes(type)) throw bad(`규칙 type: ${clueId}`);
-    const requires = strList(r.requires, 5, 6).filter((id) => allIds.has(id) && id !== clueId);
+  const uniqueTarget = (want, clueId) => {
+    let t = str(want, 31).toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/^[^a-z]+/, "").slice(0, 28);
+    if (!TARGET_ID.test(t)) t = `spot_${clueId}`;
+    let out = t, k = 2;
+    while (targets.has(out)) out = `${t}_${k++}`;
+    targets.add(out);
+    return out;
+  };
+  for (const r of Array.isArray(raw.unlockRules) ? raw.unlockRules : []) {
+    const clueId = cid(r?.clueId);
+    if (!clueId || !hiddenIds.has(clueId) || ruleFor.has(clueId)) continue;
+    const requires = [...new Set((Array.isArray(r.requires) ? r.requires : []).map(cid).filter((id) => id && id !== clueId))].slice(0, 4);
+    const suspect = sid(r.suspect);
+    let type = RULE_TYPES.includes(r.type) ? r.type : "investigate";
+    const keywords = strList(r.keywords, 6, 8);
+    const shown = cid(r.clue);
+    if (type === "ask" && (!suspect || !keywords.length)) type = "investigate";
+    if (type === "show" && (!suspect || !shown || shown === clueId)) type = "investigate";
     const rule = { clueId, type };
     if (requires.length) rule.requires = requires;
-
-    if (type === "investigate") {
-      const target = str(r.target, 31);
-      if (!TARGET_ID.test(target) || targets.has(target)) throw bad(`investigate target: ${clueId}`);
-      targets.add(target);
-      rule.target = target;
-    } else {
-      const suspect = str(r.suspect, 20);
-      if (!suspectIds.has(suspect)) throw bad(`규칙 용의자: ${clueId}`);
-      rule.suspect = suspect;
-      if (type === "ask") {
-        const keywords = strList(r.keywords, 6, 8);
-        if (keywords.length < 2) throw bad(`ask keywords: ${clueId}`);
-        rule.keywords = keywords;
-      } else {
-        const clue = str(r.clue, 6);
-        if (!allIds.has(clue) || clue === clueId) throw bad(`show clue: ${clueId}`);
-        rule.clue = clue;
-      }
-    }
+    if (type === "investigate") rule.target = uniqueTarget(r.target, clueId);
+    if (type !== "investigate") rule.suspect = suspect;
+    if (type === "ask") rule.keywords = keywords;
+    if (type === "show") rule.clue = shown;
     ruleFor.set(clueId, rule);
-    rules.push(rule);
   }
-  for (const id of hiddenIds) if (!ruleFor.has(id)) throw bad(`해금 규칙 없음: ${id}`);
+  for (const id of hiddenIds) {
+    if (!ruleFor.has(id)) ruleFor.set(id, { clueId: id, type: "investigate", target: uniqueTarget("", id) });
+  }
+  const rules = hiddenClues.map((c) => ruleFor.get(c.id));
 
-  // 선행 단서(requires + show 대상)로 도달 가능 여부와 단계(level)를 계산한다.
+  // 현장 오브젝트가 자리보다 많으면, 남는 조사 규칙을 '범인이 아닌 용의자에게 단서 보여 주기'로 바꾼다
+  const otherSuspects = suspects.filter((s) => s.id !== culprit).map((s) => s.id);
+  let invRules = rules.filter((r) => r.type === "investigate");
+  while (startClues.length + invRules.length > HOTSPOT_SLOTS.length) {
+    const r = invRules.pop();
+    targets.delete(r.target);
+    delete r.target;
+    r.type = "show";
+    r.suspect = otherSuspects[invRules.length % otherSuspects.length];
+    r.clue = startClues[0].id;
+  }
+
+  // 순환이나 끊긴 연결은 선행 조건을 지워서 모든 단서에 도달할 수 있게 만든다
   const depsOf = (r) => [...(r.requires || []), ...(r.type === "show" ? [r.clue] : [])];
-  const level = new Map([...startIds].map((id) => [id, 0]));
-  let progressed = true;
-  while (progressed) {
-    progressed = false;
-    for (const r of rules) {
-      if (level.has(r.clueId)) continue;
-      const deps = depsOf(r);
-      if (deps.every((id) => level.has(id))) {
-        level.set(r.clueId, 1 + Math.max(0, ...deps.map((id) => level.get(id))));
-        progressed = true;
+  const computeLevels = () => {
+    const level = new Map([...startIds].map((id) => [id, 0]));
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      for (const r of rules) {
+        if (level.has(r.clueId)) continue;
+        const deps = depsOf(r);
+        if (deps.every((id) => level.has(id))) {
+          level.set(r.clueId, 1 + Math.max(0, ...deps.map((id) => level.get(id))));
+          progressed = true;
+        }
       }
     }
+    return level;
+  };
+  let level = computeLevels();
+  for (let guard = 0; guard < rules.length * 2 && rules.some((r) => !level.has(r.clueId)); guard++) {
+    const r = rules.find((x) => !level.has(x.clueId));
+    if (r.requires) delete r.requires;
+    else if (r.type === "show") r.clue = startClues[0].id;
+    level = computeLevels();
   }
-  for (const id of hiddenIds) if (!level.has(id)) throw bad(`도달할 수 없는 단서: ${id}`);
+  if (rules.some((r) => !level.has(r.clueId))) throw bad("도달할 수 없는 단서");
 
-  if (level.get(decisiveId) < cfg.chainDepth) throw bad(`증거 연쇄 단계 ${level.get(decisiveId)} < ${cfg.chainDepth}`);
-  if (depsOf(ruleFor.get(decisiveId)).length < cfg.decisiveDeps) throw bad("결정적 증거의 선행 단서 부족");
-  if (rules.filter((r) => r.requires?.length).length < cfg.gatedRules) throw bad("조건부 해금 규칙 부족");
-  if (rules.filter((r) => r.type === "ask").length < cfg.askRules) throw bad("ask 규칙 부족");
-  if (rules.filter((r) => r.type === "show").length < cfg.showRules) throw bad("show 규칙 부족");
+  // --- 결정적 증거: 지정이 틀렸으면 가장 깊은 단서로 정한다
+  let decisiveId = cid(raw.decisiveClueId);
+  if (!decisiveId || !hiddenIds.has(decisiveId)) {
+    decisiveId = [...hiddenIds].sort((a, b) => level.get(b) - level.get(a))[0];
+    warnings.push("decisiveClueId 보정");
+  }
+  hiddenClues.forEach((c) => {
+    if (c.id === decisiveId) c.role = "결정적 증거";
+    else if (c.role === "결정적 증거") c.role = "핵심";
+  });
+  if (level.get(decisiveId) < cfg.chainDepth) warnings.push(`증거 단계 ${level.get(decisiveId)} (기준 ${cfg.chainDepth})`);
+  if (rules.filter((r) => r.requires?.length).length < cfg.gatedRules) warnings.push("조건부 규칙 부족");
 
-  // --- 모순·거짓말
+  // --- 모순·거짓말 (기준 미달은 기록만)
   const contradictions = (Array.isArray(raw.contradictions) ? raw.contradictions : [])
-    .map((c) => ({ suspectId: str(c?.suspectId, 20), clueId: str(c?.clueId, 6), note: str(c?.note, 160) }))
-    .filter((c) => suspectIds.has(c.suspectId) && allIds.has(c.clueId) && c.note);
-  if (contradictions.length < cfg.contradictions) throw bad(`진술 모순 ${contradictions.length} < ${cfg.contradictions}`);
-  if (!contradictions.some((c) => c.suspectId === culprit)) throw bad("범인에 대한 모순 없음");
-  if (personas[culprit].lies.length < cfg.culpritLies) throw bad("범인의 거짓말 부족");
+    .map((c) => ({ suspectId: sid(c?.suspectId), clueId: cid(c?.clueId), note: str(c?.note, 160) }))
+    .filter((c) => c.suspectId && c.clueId && c.note);
+  if (contradictions.length < cfg.contradictions) warnings.push(`모순 ${contradictions.length} (기준 ${cfg.contradictions})`);
+  if (!contradictions.some((c) => c.suspectId === culprit)) warnings.push("범인 모순 없음");
   const innocentLiars = suspects.filter((s) => s.id !== culprit && personas[s.id].lies.length > 0).length;
-  if (innocentLiars < cfg.innocentLiars) throw bad(`무고한 거짓말쟁이 ${innocentLiars} < ${cfg.innocentLiars}`);
+  if (innocentLiars < cfg.innocentLiars) warnings.push(`무고한 거짓말 ${innocentLiars} (기준 ${cfg.innocentLiars})`);
 
   // --- 단서 제시 반응
   for (const s of suspects) {
     const p = personas[s.id];
     for (const sr of p._showRaw) {
-      const cid = str(sr?.clueId, 6);
+      const id = cid(sr?.clueId);
       const text = str(sr?.text, 200);
-      if (allIds.has(cid) && text) p.showReactions[cid] = text;
+      if (id && text) p.showReactions[id] = text;
     }
     delete p._showRaw;
   }
 
   // --- 힌트·본문
-  const hints = strList(raw.hints, 4, 160);
-  if (hints.length < 3) throw bad("힌트 3개 필요");
-  const title = str(raw.title, 40);
+  const hints = strList(raw.hints, 3, 160);
+  while (hints.length < 3) hints.push(FALLBACK_HINTS[hints.length]);
+  const title = str(raw.title, 40) || `${genre.label} 사건`;
   const intro = str(raw.intro, 600);
-  const roomTitle = str(raw.roomTitle, 60);
-  const motive = str(raw.motive, 400);
-  const method = str(raw.method, 500);
-  const solutionExplain = str(raw.solutionExplain, 900);
-  if (!title || intro.length < 40 || !roomTitle || !motive || !method || solutionExplain.length < 40) {
-    throw bad("본문 항목 부족");
-  }
+  if (intro.length < 20) throw bad("사건 소개 없음");
+  const roomTitle = str(raw.roomTitle, 60) || genre.label;
+  const culpritName = suspects.find((s) => s.id === culprit).name;
+  const motive = str(raw.motive, 400) || "밝혀지지 않음";
+  const method = str(raw.method, 500) || "밝혀지지 않음";
+  const solutionExplain = str(raw.solutionExplain, 900) || `범인은 ${culpritName}입니다. 동기: ${motive} 수법: ${method}`;
 
   // --- 현장 오브젝트 배치 (서버가 자리를 정한다)
   const spots = [
@@ -380,7 +422,6 @@ export function validateGeneratedCase(raw, { genre, difficultyId }) {
       mode: "investigate", clue: hiddenClues.find((c) => c.id === r.clueId), target: r.target,
     })),
   ];
-  if (spots.length > HOTSPOT_SLOTS.length) throw bad(`현장 오브젝트가 너무 많음 (${spots.length})`);
   const slots = shuffle(HOTSPOT_SLOTS);
   const hotspots = spots.map((sp, i) => {
     const hs = {
@@ -397,6 +438,7 @@ export function validateGeneratedCase(raw, { genre, difficultyId }) {
 
   const strip = ({ iconType, label, ...rest }) => rest; // 아이콘·라벨은 현장 배치에만 쓴다
   return {
+    warnings,
     public: {
       title,
       intro,
@@ -414,7 +456,7 @@ export function validateGeneratedCase(raw, { genre, difficultyId }) {
       personas,
       clues: Object.fromEntries(hiddenClues.map((c) => [c.id, strip(c)])),
       unlockRules: rules,
-      hints: hints.slice(0, 3),
+      hints,
       scoring: { culprit: 50, method: 25, motive: 25, hintPenalty: 5 },
       solutionExplain,
       contradictions,
@@ -449,13 +491,15 @@ export async function generateCase({ genreId, difficultyId }) {
       }
     },
     options: {
-      temperature: 1.0,
+      temperature: 0.9,
       maxOutputTokens: 16000,
       maxMessageChars: 8000,
-      perAttemptTimeoutMs: 40000,
+      perAttemptTimeoutMs: 50000, // 한 번에 충분한 시간을 준다 (Vercel 제한 60초)
       totalBudgetMs: 56000,
     },
   });
 
-  return { id: `gen-${crypto.randomBytes(5).toString("hex")}`, ...data, model };
+  const { warnings, ...caseData } = data;
+  if (warnings.length) console.warn(`[generate] ${genre.id}/${difficultyId} 보정: ${warnings.join(", ")}`);
+  return { id: `gen-${crypto.randomBytes(5).toString("hex")}`, ...caseData, model };
 }

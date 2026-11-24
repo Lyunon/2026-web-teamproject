@@ -154,13 +154,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ---------- 생성 ----------
   async function requestCase(genre, difficulty) {
+    let token;
+    try {
+      token = await user.getIdToken();
+    } catch {
+      throw new Error('로그인 정보를 확인하지 못했습니다. 새로고침해 주세요.');
+    }
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
     let res;
     try {
       res = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ genre, difficulty }),
         signal: ctrl.signal,
       });
