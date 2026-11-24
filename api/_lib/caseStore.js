@@ -7,25 +7,39 @@ import path from "node:path";
 
 import { HttpError } from "./http.js";
 import { getClueMap, initialUnlocked } from "./rules.js";
+import { openCase } from "./caseToken.js";
 
 const CASE_DIR = path.join(process.cwd(), "data", "cases");
 
 export const MAX_MESSAGE = 300;
 
-export function loadCase(caseId) {
-  if (typeof caseId !== "string" || !/^[a-z0-9-]{1,40}$/.test(caseId)) {
-    throw new HttpError(400, "잘못된 사건 ID입니다.");
-  }
-  const file = path.join(CASE_DIR, `${caseId}.json`);
-  if (!fs.existsSync(file)) throw new HttpError(404, "없는 사건입니다.");
-
-  // 개발 중 시드를 고치면 바로 반영되도록 매번 읽는다. (파일이 작다)
-  const data = JSON.parse(fs.readFileSync(file, "utf8"));
+function build(data) {
   return {
     casePublic: data.public,
     caseSecret: data.secret,
     clueMap: getClueMap(data.public, data.secret),
   };
+}
+
+// 사건 ID가 gen- 으로 시작하면 Gemini 가 만든 사건이다. 서버가 봉인한 caseToken 에서 꺼낸다.
+export function loadCase(caseId, caseToken) {
+  if (typeof caseId !== "string" || !/^[a-z0-9-]{1,40}$/.test(caseId)) {
+    throw new HttpError(400, "잘못된 사건 ID입니다.");
+  }
+
+  if (caseId.startsWith("gen-")) {
+    const data = openCase(caseToken);
+    if (data?.id !== caseId || !data.public || !data.secret) {
+      throw new HttpError(400, "사건 정보가 올바르지 않습니다. 사건 목록에서 다시 시작해 주세요.");
+    }
+    return build(data);
+  }
+
+  const file = path.join(CASE_DIR, `${caseId}.json`);
+  if (!fs.existsSync(file)) throw new HttpError(404, "없는 사건입니다.");
+
+  // 개발 중 시드를 고치면 바로 반영되도록 매번 읽는다. (파일이 작다)
+  return build(JSON.parse(fs.readFileSync(file, "utf8")));
 }
 
 // 브라우저로 내보내는 단서는 이 4개 필드만.

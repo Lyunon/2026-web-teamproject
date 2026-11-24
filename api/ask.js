@@ -22,7 +22,7 @@ const CONFESSION_FALLBACK = {
 };
 
 export default route(["POST"], async ({ body }) => {
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
 
   const suspectId = body.suspectId;
   if (!casePublic.suspects.some((s) => s.id === suspectId)) {

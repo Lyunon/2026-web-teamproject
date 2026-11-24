@@ -4,6 +4,19 @@
 
 import { getClueMap } from "./rules.js";
 
+// 난이도별 심문 태도. 단서 해금 규칙은 그대로이고 말하는 방식만 달라진다.
+// 기존 사건의 casePublic.difficulty("보통")만 있고 difficultyId 가 없으면 아무것도 덧붙이지 않는다.
+const DIFFICULTY_STYLE = {
+  easy:
+    "증거를 제시받으면 비교적 쉽게 모순을 인정하고 숨기던 것을 털어놓는다. 질문에 짧게나마 단서가 되는 말을 흘린다.",
+  hard:
+    "증거를 한 번 제시받았다고 곧바로 무너지지 않는다. 사소한 부분은 인정해도 핵심은 그럴듯하게 둘러댄다. " +
+    "같은 내용을 다른 방식으로 물어도 앞서 한 말과 일관되게 답한다.",
+  expert:
+    "모순을 지적받아도 착각, 기억 혼동, 오해를 내세워 한 번 더 둘러댄다. 거짓말에 진실 한 조각을 섞어 그럴듯하게 만든다. " +
+    "서로 맞물린 단서를 두 개 이상 보기 전에는 핵심 거짓말을 유지한다. 필요 이상으로 친절하게 먼저 정보를 주지 않는다.",
+};
+
 function bullets(list) {
   return (list || []).map((s) => `- ${s}`).join("\n");
 }
@@ -77,6 +90,9 @@ export function buildSystemInstruction({ casePublic, caseSecret, suspectId, unlo
         `네 성격과 아는 것에 맞게 자연스럽게 반응한다.`
     );
   }
+
+  const style = DIFFICULTY_STYLE[casePublic.difficultyId];
+  if (style) parts.push(`[이번 사건의 심문 난이도: ${casePublic.difficulty}]\n${style}`);
 
   parts.push(
     [

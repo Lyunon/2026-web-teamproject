@@ -21,10 +21,10 @@
     <div class="cases-top-bar">
       <div>
         <h1>📂 사건 에피소드 목록</h1>
-        <p>제미나이(Gemini) API 및 JSON 시나리오로 구성된 사건을 선택하고 <strong>[수사 시작]</strong>을 누르세요.</p>
+        <p>사건을 선택하고 <strong>[수사 시작]</strong>을 누르거나, Gemini가 만드는 <strong>새 사건</strong>에 도전하세요.</p>
       </div>
       <button id="btn-generate-episode" class="btn btn-primary" type="button">
-        ✨ Gemini API로 새 사건 에피소드 생성
+        ✨ Gemini로 새 사건 생성
       </button>
     </div>
 
@@ -67,6 +67,41 @@
     </section>
   </main>
 
-  <script defer src="./js/cases.js"></script>
+  <!-- 사건 생성 팝업 -->
+  <div id="generate-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="gen-title">
+    <div class="modal-card modal-card-wide">
+      <form id="generate-form">
+        <h3 id="gen-title">✨ 새 사건 생성</h3>
+        <p>장르와 난이도를 고르면 Gemini가 매번 새로운 사건을 만듭니다. 난이도가 높을수록 용의자가 늘고 진술이 더 어긋나며, 결정적 증거를 얻는 길이 길어집니다.</p>
+
+        <div id="gen-step-form">
+          <fieldset class="gen-fieldset">
+            <legend>추리 장르</legend>
+            <div id="genre-options" class="option-grid"></div>
+          </fieldset>
+          <fieldset class="gen-fieldset">
+            <legend>난이도</legend>
+            <div id="difficulty-options" class="option-grid option-grid-4"></div>
+          </fieldset>
+        </div>
+
+        <div id="gen-status" class="gen-status" role="status" aria-live="polite" hidden></div>
+
+        <div id="gen-result" class="gen-result" hidden>
+          <span id="gen-result-meta" class="episode-tag"></span>
+          <h4 id="gen-result-title"></h4>
+          <p id="gen-result-intro"></p>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-gen-cancel" class="btn">취소</button>
+          <button type="submit" id="btn-gen-submit" class="btn btn-primary">사건 생성하기</button>
+          <a id="btn-gen-play" class="btn btn-primary" href="#" hidden>🔍 바로 수사 시작</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./js/cases.js"></script>
 </body>
 </html>

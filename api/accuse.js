@@ -6,7 +6,7 @@ import { calculateScore, canAccuse } from "../public/js/scoring.js";
 import { loadCase, cleanHintCount } from "./_lib/caseStore.js";
 
 export default route(["POST"], async ({ body }) => {
-  const { casePublic, caseSecret } = loadCase(body.caseId);
+  const { casePublic, caseSecret } = loadCase(body.caseId, body.caseToken);
 
   if (!casePublic.suspects.some((s) => s.id === body.suspectId)) {
     throw new HttpError(400, "없는 용의자입니다.");

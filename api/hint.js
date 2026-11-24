@@ -5,7 +5,7 @@ import { route } from "./_lib/http.js";
 import { loadCase, cleanHintCount } from "./_lib/caseStore.js";
 
 export default route(["POST"], async ({ body }) => {
-  const { caseSecret } = loadCase(body.caseId);
+  const { caseSecret } = loadCase(body.caseId, body.caseToken);
   const used = cleanHintCount(body.hintCount);
   const hints = caseSecret.hints;
 

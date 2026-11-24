@@ -6,7 +6,7 @@ import { loadCase, publicClue, hasClue, cleanUnlocked } from "./_lib/caseStore.j
 import { unlockByInvestigate } from "./_lib/rules.js";
 
 export default route(["POST"], async ({ body }) => {
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
   const unlocked = cleanUnlocked(body.unlocked, casePublic, clueMap);
   const target = String(body.target ?? "").trim().slice(0, 50);
 
