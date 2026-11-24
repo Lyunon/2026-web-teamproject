@@ -1,4 +1,5 @@
-// 공통 점수 규칙으로 결과 화면과 카카오 공유 점수를 통일한다.
+// 공통 점수 규칙으로 결과 화면과 카카오 공유 점수를 통일한다. 랭킹은 /api/ranking 에서 읽는다.
+// 공개 파일이므로 정답·해설을 여기에 적지 않는다. 해설은 서버 응답(last_case_result)으로만 받는다.
 
 document.addEventListener('DOMContentLoaded', async () => {
   const player = await window.authReady;
@@ -8,22 +9,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   try { stored = JSON.parse(localStorage.getItem('last_case_result') || 'null'); }
   catch { /* 손상된 저장 정보로 결과 페이지 전체가 중단되지 않도록 한다. */ }
 
-  const accusedSuspect = params.get('suspect') || (stored && stored.accusedSuspect) || '오진석 (주치의)';
-  const isCorrect = params.get('correct') !== null ? params.get('correct') === '1' : (stored ? stored.isCorrect : true);
-  const isMethodCorrect = params.get('method') !== null ? params.get('method') === '1' : (stored ? stored.isMethodCorrect : true);
-  const isMotiveCorrect = params.get('motive') !== null ? params.get('motive') === '1' : (stored ? stored.isMotiveCorrect : true);
-  const elapsedSeconds = Number(params.get('time') ?? (stored ? stored.elapsedSeconds : 95));
+  // 결과가 없을 때 기본값이 정답처럼 보이지 않도록 한다.
+  const accusedSuspect = params.get('suspect') || (stored && stored.accusedSuspect) || '알 수 없음';
+  const isCorrect = params.get('correct') !== null ? params.get('correct') === '1' : Boolean(stored && stored.isCorrect);
+  const isMethodCorrect = params.get('method') !== null ? params.get('method') === '1' : Boolean(stored && stored.isMethodCorrect);
+  const isMotiveCorrect = params.get('motive') !== null ? params.get('motive') === '1' : Boolean(stored && stored.isMotiveCorrect);
+  const elapsedSeconds = Number(params.get('time') ?? (stored ? stored.elapsedSeconds : 0));
   const hintCount = Number(params.get('hints') ?? (stored ? stored.hintCount : 0));
   const nickname = window.playerProfile.nickname;
-
-  const solutionExplain = (stored && stored.solutionExplain) ||
-    '범인은 주치의 오진석이다. 회장이 병원 청구 비리를 신고하겠다고 통보하자(16:30), 집사가 자리를 비운 17:05~17:12에 서재 약장의 심장약 병을 겉모양이 같은 병으로 바꿔 놓았다. 회장은 평소처럼 23:05경 그 약을 복용하고 숨졌다. 오진석은 23:20에 약병을 회수하러 왔다가 한소영의 기척에 물러났고, 자연사를 주장해 부검을 막으려 했다. 유언장은 서명되지 않았고 오진석은 상속인이 아니므로 유산 갈등은 오답 유도였다.';
+  const solutionExplain = (stored && stored.solutionExplain) || '';
 
   function formatTime(sec) {
-    const mins = String(Math.floor(sec / 60)).padStart(2, '0');
-    const secs = String(sec % 60).padStart(2, '0');
-    return `${mins}:${secs}`;
+    const s = Math.max(0, Math.floor(Number(sec) || 0));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   }
+  const strong = (t) => Object.assign(document.createElement('strong'), { textContent: t });
+  const br = () => document.createElement('br');
 
   const bannerEl = document.getElementById('result-banner');
   const verdictTitleEl = document.getElementById('verdict-title');
@@ -34,22 +35,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { base: baseScore, timePenalty, hintPenalty, score: finalScore } =
     calculateScore({ isCorrect, elapsedSeconds, hintCount });
 
+  // URL 값이 들어가므로 innerHTML 대신 텍스트 노드로 넣는다.
   if (isCorrect) {
     bannerEl.className = 'result-banner success';
     verdictTitleEl.textContent = '🎉 범인을 찾았습니다!';
-    verdictSubEl.innerHTML = `
-      지목한 용의자 <strong>[${accusedSuspect}]</strong>는 진범이 맞습니다!<br /><br />
-      <strong>[사건 진상 해설]</strong><br />${solutionExplain}
-    `;
-    scoreStatusBadge.textContent = '수사 성공 (정답)';
-
+    verdictSubEl.replaceChildren(
+      '지목한 용의자 ', strong(`[${accusedSuspect}]`), '는 진범이 맞습니다!', br(), br(),
+      strong('[사건 진상 해설]'), br(), solutionExplain,
+    );
+    scoreStatusBadge.textContent =
+      stored?.ranked === true ? '수사 성공 · 랭킹 등록' :
+      stored?.ranked === false ? '수사 성공 (랭킹은 첫 지목만 반영)' : '수사 성공 (정답)';
   } else {
     bannerEl.className = 'result-banner fail';
     verdictTitleEl.textContent = '❌ 사건을 해결하지 못했습니다.';
-    verdictSubEl.innerHTML = `
-      지목한 용의자 <strong>[${accusedSuspect}]</strong>는 진범이 아니었습니다.<br />
-      누가 가장 쉽게 약에 손댈 수 있었는지, 집사의 약 일지(c05)와 약병 라벨(c11)을 다시 확인해 보세요!
-    `;
+    verdictSubEl.replaceChildren(
+      '지목한 용의자 ', strong(`[${accusedSuspect}]`), '는 진범이 아니었습니다.', br(),
+      '누가 가장 쉽게 약에 손댈 수 있었는지, 집사의 약 일지(c05)와 약병 라벨(c11)을 다시 확인해 보세요!',
+    );
     scoreStatusBadge.textContent = '수사 실패 (오답)';
   }
 
@@ -60,38 +63,49 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('hint-penalty-val').textContent = `-${hintPenalty.toLocaleString()}점`;
   document.getElementById('final-score-val').textContent = `${finalScore.toLocaleString()}점`;
 
-  const defaultRankings = [
-    { name: '셜록홈즈', timeSec: 120, hints: 0, score: 1000, isMe: false },
-    { name: '명탐정코난', timeSec: 480, hints: 0, score: 1000, isMe: false },
-    { name: '포와로', timeSec: 660, hints: 1, score: 700, isMe: false },
-    { name: '김전일', timeSec: 1100, hints: 2, score: 450, isMe: false }
-  ];
-
-  if (isCorrect) {
-    defaultRankings.push({
-      name: `${nickname} [나]`,
-      timeSec: elapsedSeconds,
-      hints: hintCount,
-      score: finalScore,
-      isMe: true
-    });
-  }
-
-  defaultRankings.sort((a, b) => b.score - a.score);
-
+  // ---------- 랭킹 (서버) ----------
   const tbody = document.getElementById('ranking-tbody');
-  tbody.innerHTML = defaultRankings
-    .map((row, idx) => `
-      <tr class="${row.isMe ? 'my-record' : ''}">
-        <td>${idx + 1}위</td>
-        <td>${row.name}</td>
-        <td>${formatTime(row.timeSec)}</td>
-        <td>${row.hints}회</td>
-        <td><strong>${row.score.toLocaleString()}점</strong></td>
-      </tr>
-    `)
-    .join('');
-  // 화면에 표시한 최종 점수를 그대로 공유한다. 예시 랭킹과 정답은 전달하지 않는다.
+  const caseId = (stored && stored.caseId) || 'mansion-001';
+  function messageRow(text) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.style.textAlign = 'center';
+    td.textContent = text;
+    tr.appendChild(td);
+    tbody.replaceChildren(tr);
+  }
+  function rankRow(r) {
+    const tr = document.createElement('tr');
+    if (r.isMe) tr.className = 'my-record';
+    [`${r.rank}위`, r.isMe ? `${r.nickname} [나]` : r.nickname, formatTime(r.elapsedSeconds), `${r.hintCount}회`]
+      .forEach((t) => { const td = document.createElement('td'); td.textContent = t; tr.appendChild(td); });
+    const td = document.createElement('td');
+    td.appendChild(strong(`${Number(r.score).toLocaleString()}점`));
+    tr.appendChild(td);
+    return tr;
+  }
+  async function loadRanking() {
+    messageRow('랭킹을 불러오는 중…');
+    try {
+      const token = await player.getIdToken();
+      const res = await fetch(`/api/ranking?caseId=${encodeURIComponent(caseId)}&limit=10`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      const { top, me } = json.data;
+      if (!top.length) return messageRow('아직 등록된 기록이 없습니다. 첫 번째 해결자가 되어 보세요!');
+      tbody.replaceChildren(...top.map(rankRow));
+      if (me && !top.some((r) => r.isMe)) tbody.append(rankRow(me));
+    } catch (err) {
+      console.warn('[result] 랭킹을 불러오지 못했습니다:', err.message);
+      messageRow('랭킹을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.');
+    }
+  }
+  if (tbody) loadRanking(); // 공유 준비를 기다리게 하지 않는다
+
+  // 화면에 표시한 최종 점수를 그대로 공유한다. 정답은 전달하지 않는다.
   try {
     const { canShareResult } = await import('./kakao-share-data.js');
     const displayed = { isCorrect, isMethodCorrect, isMotiveCorrect, elapsedSeconds, hintCount };
@@ -104,5 +118,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch {
     document.getElementById('share-message').textContent = '공유 기능을 준비하지 못했어요. 페이지를 새로고침해 주세요.';
   }
-
 });

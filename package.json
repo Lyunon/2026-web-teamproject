@@ -17,12 +17,15 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "bugs": {
     "url": "https://github.com/Lyunon/2026-web-teamproject/issues"
   },
   "homepage": "https://github.com/Lyunon/2026-web-teamproject#readme",
   "dependencies": {
     "@google/genai": "^2.32.0",
-    "firebase-admin": "^14.5.0"
+    "firebase-admin": "^13.10.0"
   }
 }

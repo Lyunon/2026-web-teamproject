@@ -15,13 +15,15 @@ import {
 import { generateSuspectReply } from "./_lib/gemini.js";
 import { buildSystemInstruction, buildShownClueMessage } from "./_lib/prompt.js";
 import { unlockByAsk, unlockByShow, looksLikeConfession } from "./_lib/rules.js";
+import { requireUser } from "./_lib/firebase.js";   
 
 const CONFESSION_FALLBACK = {
   reply: "(입을 굳게 다문다.) ……더 드릴 말씀은 없습니다.",
   emotion: "nervous",
 };
 
-export default route(["POST"], async ({ body }) => {
+export default route(["POST"], async ({ body, req }) => {
+  await requireUser(req);
   const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
 
   const suspectId = body.suspectId;

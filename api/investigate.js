@@ -4,8 +4,10 @@
 import { route } from "./_lib/http.js";
 import { loadCase, publicClue, hasClue, cleanUnlocked } from "./_lib/caseStore.js";
 import { unlockByInvestigate } from "./_lib/rules.js";
+import { requireUser } from "./_lib/firebase.js"; 
 
-export default route(["POST"], async ({ body }) => {
+export default route(["POST"], async ({ body, req }) => {
+  await requireUser(req);
   const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
   const unlocked = cleanUnlocked(body.unlocked, casePublic, clueMap);
   const target = String(body.target ?? "").trim().slice(0, 50);

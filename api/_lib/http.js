@@ -28,7 +28,7 @@ export function route(methods, handler) {
         throw new HttpError(405, "허용되지 않는 요청입니다.");
       }
       const body = req.method === "GET" ? {} : parseBody(req.body);
-      const data = await handler({ body, query: req.query ?? {} });
+      const data = await handler({ body, query: req.query ?? {}, req });
       res.status(200).json({ ok: true, data });
     } catch (err) {
       if (err instanceof HttpError) {
