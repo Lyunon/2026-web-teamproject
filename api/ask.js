@@ -22,9 +22,9 @@ const CONFESSION_FALLBACK = {
   emotion: "nervous",
 };
 
-export default route(["POST"], async ({ body, req }) => {   
-  await requireUser(req);     
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
+export default route(["POST"], async ({ body, req }) => {
+  await requireUser(req);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
 
   const suspectId = body.suspectId;
   if (!casePublic.suspects.some((s) => s.id === suspectId)) {

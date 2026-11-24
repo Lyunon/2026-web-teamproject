@@ -231,11 +231,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!authUser) return;
   const { canAccuse, createPlayClock, validCount } = await import('./scoring.js');
   const uid = authUser.uid;
-  const CASE_ID = 'mansion-001';
+  // 사건 목록에서 ?case=<id> 로 들어온다. 없으면 기본 사건.
+  const CASE_ID = (new URLSearchParams(location.search).get('case') || 'mansion-001').trim();
   const STORAGE_KEY = `case_state_${uid}_${CASE_ID}`; // 계정마다 저장을 나눈다
+  const IS_GENERATED = CASE_ID.startsWith('gen-'); // Gemini 가 만든 사건
 
-  // 현장 배치(배경, 오브젝트 위치)만 쓴다. 정답·해금 규칙은 서버에만 있다.
-  const view = EPISODES_DB[CASE_ID].public;
+  // 생성된 사건은 사건 목록 화면이 저장해 둔 봉인 토큰(caseToken)을 서버 요청마다 같이 보낸다.
+  // 정답은 토큰 안에 암호화되어 있어 여기서는 읽을 수 없다.
+  let CASE_TOKEN = '';
+  if (IS_GENERATED) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`gen_cases_${uid}`) || '[]');
+      CASE_TOKEN = (Array.isArray(saved) ? saved.find((c) => c?.caseId === CASE_ID)?.caseToken : '') || '';
+    } catch { /* 아래에서 안내한다 */ }
+  }
+
+  // 현장 배치(배경, 오브젝트 위치). 기존 사건은 이 파일의 EPISODES_DB, 생성 사건은 서버(start)가 준다.
+  // 정답·해금 규칙은 서버에만 있다.
+  let view = EPISODES_DB[CASE_ID]?.public || { roomTitle: '', sceneTheme: 'mansion_study', hotspots: [] };
 
   const $ = (id) => document.getElementById(id);
   const screens = {
@@ -282,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       res = await fetch(`/api/${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
+        body: JSON.stringify(CASE_TOKEN ? { ...body, caseToken: CASE_TOKEN } : body),
       });
     } catch {
       throw new Error('서버에 연결할 수 없습니다.');
@@ -871,8 +884,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ---------- 시작 ----------
+  if (IS_GENERATED && !CASE_TOKEN) {
+    clearInterval(timerInterval);
+    toast('⚠️ 이 사건은 이 브라우저에 저장되어 있지 않습니다. 사건 목록에서 새 사건을 생성해 주세요.');
+    return;
+  }
   try {
     startData = await api('start', { caseId: CASE_ID });
+    if (startData.scene) view = startData.scene; // 생성된 사건의 배경 테마와 오브젝트 배치
   } catch (err) {
     clearInterval(timerInterval);
     toast(`⚠️ 사건을 불러오지 못했습니다: ${err.message}`);
