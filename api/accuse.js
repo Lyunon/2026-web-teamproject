@@ -10,7 +10,7 @@ import { sessionRef, rankingRef, sortKeyOf } from "./_lib/session.js";
 
 export default route(["POST"], async ({ body, req }) => {
   const user = await requireUser(req);
-  const { casePublic, caseSecret } = loadCase(body.caseId, body.caseToken);
+  const { casePublic, caseSecret } = loadCase(body.caseId);
 
   if (!casePublic.suspects.some((s) => s.id === body.suspectId)) {
     throw new HttpError(400, "없는 용의자입니다.");
@@ -36,7 +36,7 @@ export default route(["POST"], async ({ body, req }) => {
     const hintCount = Math.max(clientHints, cleanHintCount(s.hintCount));
     const now = Date.now();
     tx.set(sRef, { firstAccusedAt: now, firstCorrect: correct, hintCount, elapsedSeconds }, { merge: true });
-    if (!correct || rSnap.exists || body.caseId.startsWith("gen-")) return { hintCount, ranked: false }; // 생성 사건은 랭킹 제외
+    if (!correct || rSnap.exists) return { hintCount, ranked: false };
 
     const p = calculateScore({ isCorrect: true, elapsedSeconds, hintCount });
     tx.set(rRef, {

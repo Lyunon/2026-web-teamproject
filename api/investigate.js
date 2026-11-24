@@ -8,7 +8,7 @@ import { requireUser } from "./_lib/firebase.js";
 
 export default route(["POST"], async ({ body, req }) => {
   await requireUser(req);
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
   const unlocked = cleanUnlocked(body.unlocked, casePublic, clueMap);
   const target = String(body.target ?? "").trim().slice(0, 50);
 

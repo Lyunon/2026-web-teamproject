@@ -24,7 +24,7 @@ const CONFESSION_FALLBACK = {
 
 export default route(["POST"], async ({ body, req }) => {
   await requireUser(req);
-  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId, body.caseToken);
+  const { casePublic, caseSecret, clueMap } = loadCase(body.caseId);
 
   const suspectId = body.suspectId;
   if (!casePublic.suspects.some((s) => s.id === suspectId)) {

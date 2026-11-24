@@ -7,7 +7,6 @@ import path from "node:path";
 
 import { HttpError } from "./http.js";
 import { getClueMap, initialUnlocked } from "./rules.js";
-import { openCase } from "./caseToken.js";
 
 const CASE_DIR = path.join(process.cwd(), "data", "cases");
 
@@ -21,18 +20,10 @@ function build(data) {
   };
 }
 
-// 사건 ID가 gen- 으로 시작하면 Gemini 가 만든 사건이다. 서버가 봉인한 caseToken 에서 꺼낸다.
-export function loadCase(caseId, caseToken) {
+// 사건은 개발자가 만든 data/cases/<caseId>.json 에서만 읽는다.
+export function loadCase(caseId) {
   if (typeof caseId !== "string" || !/^[a-z0-9-]{1,40}$/.test(caseId)) {
     throw new HttpError(400, "잘못된 사건 ID입니다.");
-  }
-
-  if (caseId.startsWith("gen-")) {
-    const data = openCase(caseToken);
-    if (data?.id !== caseId || !data.public || !data.secret) {
-      throw new HttpError(400, "사건 정보가 올바르지 않습니다. 사건 목록에서 다시 시작해 주세요.");
-    }
-    return build(data);
   }
 
   const file = path.join(CASE_DIR, `${caseId}.json`);

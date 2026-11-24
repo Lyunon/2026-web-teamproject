@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --env-file=.env server.mjs",
-    "test:signup": "node --experimental-vm-modules --test test/signup.test.mjs",
-    "test:generate": "node --test test/case-generator.test.mjs"
+    "test:signup": "node --experimental-vm-modules --test test/signup.test.mjs"
   },
   "repository": {
     "type": "git",
