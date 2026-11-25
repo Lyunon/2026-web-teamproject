@@ -38,7 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // URL 값이 들어가므로 innerHTML 대신 텍스트 노드로 넣는다.
   if (isCorrect) {
     bannerEl.className = 'result-banner success';
-    verdictTitleEl.textContent = '🎉 범인을 찾았습니다!';
+    document.getElementById('verdict-badge').textContent = 'CASE CLOSED';
+    verdictTitleEl.textContent = '사건 해결 · 범인 검거';
     verdictSubEl.replaceChildren(
       '지목한 용의자 ', strong(`[${accusedSuspect}]`), '는 진범이 맞습니다!', br(), br(),
       strong('[사건 진상 해설]'), br(), solutionExplain,
@@ -48,10 +49,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       stored?.ranked === false ? '수사 성공 (랭킹은 첫 지목만 반영)' : '수사 성공 (정답)';
   } else {
     bannerEl.className = 'result-banner fail';
-    verdictTitleEl.textContent = '❌ 사건을 해결하지 못했습니다.';
+    document.getElementById('verdict-badge').textContent = 'CASE UNSOLVED';
+    verdictTitleEl.textContent = '수사 실패 · 진범은 따로 있었다';
     verdictSubEl.replaceChildren(
       '지목한 용의자 ', strong(`[${accusedSuspect}]`), '는 진범이 아니었습니다.', br(),
-      '누가 가장 쉽게 약에 손댈 수 있었는지, 집사의 약 일지(c05)와 약병 라벨(c11)을 다시 확인해 보세요!',
+      '확보한 단서와 용의자들의 진술을 다시 맞춰 보고, 어긋나는 부분을 찾아 다시 도전해 보세요!',
     );
     scoreStatusBadge.textContent = '수사 실패 (오답)';
   }

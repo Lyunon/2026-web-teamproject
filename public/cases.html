@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 추리 수사관 - 사건 목록</title>
+  <title>F5 추리 수사본부 - 사건 목록</title>
   <link rel="stylesheet" href="./css/base.css" />
   <script type="module" src="./js/guard.js"></script>
 </head>
 <body class="auth-pending">
 
   <header class="app-header">
-    <div class="brand-logo">🕵️‍♂️ AI 추리 수사본부</div>
+    <div class="brand-logo">🕵️‍♂️ <span class="f5">F5</span> 추리 수사본부</div>
     <div class="header-right">
       <span id="user-display">회원 확인 중…</span>
       <button id="btn-logout" class="btn" type="button">로그아웃</button>
@@ -20,8 +20,9 @@
   <main class="cases-container">
     <div class="cases-top-bar">
       <div>
-        <h1>📂 사건 에피소드 목록</h1>
-        <p>사건을 선택하고 <strong>[수사 시작]</strong>을 눌러 수사를 시작하세요.</p>
+        <span class="login-badge">CASE ARCHIVE</span>
+        <h1>📂 사건 파일 보관함</h1>
+        <p>도전할 사건 파일을 고르고 <strong>[수사 시작]</strong>을 눌러 현장으로 출동하세요.</p>
       </div>
     </div>
 
@@ -31,7 +32,7 @@
       <article class="episode-card" data-case-id="mansion-001">
         <div>
           <div class="episode-meta">
-            <span class="episode-tag">mansion-001 · 메인 시나리오</span>
+            <span class="episode-tag">EPISODE 01 · 저택 살인</span>
             <span class="episode-difficulty">난이도: 보통</span>
           </div>
           <h2>송림 저택의 마지막 밤</h2>
@@ -44,22 +45,6 @@
         </div>
       </article>
 
-      <!-- 에피소드 2 -->
-      <article class="episode-card" data-case-id="case-02">
-        <div>
-          <div class="episode-meta">
-            <span class="episode-tag">EPISODE 02 · 미술관 도난</span>
-            <span class="episode-difficulty">난이도: 어려움</span>
-          </div>
-          <h2>사라진 푸른 다이아몬드</h2>
-          <p class="episode-desc">
-            자선 경매 개막 10분 전, 보안 구역 전시관의 핵심 보석이 감쪽같이 사라졌습니다. 내부 관계자 중 거짓말을 하는 범인을 찾아내세요.
-          </p>
-        </div>
-        <div class="episode-Start-wrap">
-          <a href="./play.html?case=mansion-001" class="btn btn-primary">수사 시작</a>
-        </div>
-      </article>
 
     </section>
   </main>

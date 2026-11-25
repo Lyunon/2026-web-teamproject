@@ -32,7 +32,7 @@ export function createSharePayload({ nickname, caseTitle, isCorrect, finalScore,
   return {
     objectType: 'text',
     text: [
-      '🕵️ AI 추리 수사본부 · 수사 결과',
+      '🕵️ F5 추리 수사본부 · 수사 결과',
       `${cleanText(nickname, 12)} 탐정의 도전`,
       `사건: ${cleanText(caseTitle, 60)}`,
       `결과: ${isCorrect ? '사건 해결 성공!' : '사건 해결 실패 · 다시 도전!'}`,
