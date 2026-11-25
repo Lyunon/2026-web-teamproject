@@ -78,6 +78,7 @@ const CONFESSION_PATTERNS = [
   /(내|제)\s*(짓|소행)(이|입니다|이다)/,
   /(내가|제가)\s*(회장[님]?(을)?\s*)?(죽였|독살|바꿔치)/,
   /약병을\s*(제가|내가)\s*바꿔치/,
+  /(내가|제가)\s*(다이아(몬드)?|보석|진품|푸른\s*별)(을|를)?\s*(훔쳤|바꿔|빼돌|숨겼)/,
 ];
 export function looksLikeConfession(text) {
   return CONFESSION_PATTERNS.some((re) => re.test(String(text || "")));
