@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 추리 수사관 - 동적 사건 현장 & 멀티 에피소드 (v5)</title>
+  <title>F5 추리 수사본부 - 수사 중</title>
   <link rel="stylesheet" href="./css/base.css" />
   <link rel="stylesheet" href="./css/play.css" />
   <script type="module" src="./js/guard.js"></script>
@@ -11,25 +11,36 @@
 </head>
 <body class="auth-pending">
 
-  <!-- 상단 공통 헤더 (에피소드 전환 셀렉터 포함) -->
-  <header class="app-header">
-    <div class="brand-logo" style="gap: 12px; flex-wrap: wrap;">
-      <span id="case-header-title">📁 사건 [mansion-001] : 송림 저택의 마지막 밤</span>
+  <!-- 상단 헤더: 왼쪽 사건 이름, 오른쪽 사용자 메뉴(현재 화면 · 수사관 · 사건 목록 · 로그아웃) -->
+  <header class="app-header play-header">
+    <div class="brand-logo brand-stack">
+      <span class="brand-mini">🕵️‍♂️ F5 추리 수사본부</span>
+      <span id="case-header-title">📁 사건 파일을 불러오는 중…</span>
     </div>
-    <div class="header-right">
-      <span data-player-name>회원 확인 중…</span>
-      <button id="btn-logout" class="btn" type="button">로그아웃</button>
-      <span id="current-screen-badge" class="status-pill">현재 화면: 사건 현장 탐색</span>
-      <span class="status-pill">⏱️ 경과 시간: <strong id="timer-display">00:00</strong></span>
-      <button id="btn-use-hint" class="btn" type="button">
-        💡 힌트 보기 (<span id="hint-count-display">0</span>/3)
+    <nav class="user-menu" aria-label="사용자 메뉴">
+      <span id="current-screen-badge" class="user-menu-item">현재 화면: 사건 현장 탐색</span>
+      <span class="user-menu-item" data-player-name>회원 확인 중…</span>
+      <a href="./cases.html" class="btn btn-ghost">📂 사건 목록</a>
+      <button id="btn-logout" class="btn btn-ghost" type="button">로그아웃</button>
+    </nav>
+  </header>
+
+  <!-- 수사 HUD: 게임 진행에 필요한 것만 모은다 (스크롤해도 따라온다) -->
+  <div class="play-hud">
+    <div class="hud-group" role="group" aria-label="수사 진행">
+      <div class="hud-item hud-timer">
+        <span class="hud-label">⏱️ 경과 시간</span>
+        <strong id="timer-display">00:00</strong>
+      </div>
+      <button id="btn-use-hint" class="hud-item hud-btn" type="button">
+        <span class="hud-label">💡 힌트</span>
+        <strong><span id="hint-count-display">0</span> / 3</strong>
       </button>
-      <button id="btn-open-accuse" class="btn btn-danger" type="button" disabled>
+      <button id="btn-open-accuse" class="hud-item hud-btn hud-accuse" type="button" disabled>
         🔒 범인 지목까지 01:00
       </button>
-      <a href="./cases.html" class="btn">📂 사건 목록</a>
     </div>
-  </header>
+  </div>
 
   <main class="play-container">
 
@@ -39,7 +50,7 @@
     <section id="screen-notebook" class="screen">
       <div class="screen-nav-bar">
         <div class="screen-title-group">
-          <h2 id="notebook-heading">📓 사건 수첩 — 송림 저택의 마지막 밤</h2>
+          <h2 id="notebook-heading">📓 사건 수첩</h2>
           <p id="case-intro-text"></p>
         </div>
         <div class="screen-nav-buttons">
@@ -95,9 +106,9 @@
     <section id="screen-scene" class="screen active">
       <div class="screen-nav-bar">
         <div class="screen-title-group">
-          <h2 id="scene-room-heading">🔍 사건 현장 — 송림 저택 2층 서재 & 보안 모니터실</h2>
+          <h2 id="scene-room-heading">🔍 사건 현장</h2>
           <p>
-            상단에서 에피소드를 바꾸면 <strong>사건 현장 배경 일러스트와 증거물 오브젝트 배치</strong>가 JSON 데이터에 맞춰 실시간으로 변경됩니다!
+            현장을 샅샅이 살펴보세요. <strong>수상한 물건을 클릭</strong>하면 단서를 조사해 사건 수첩에 기록합니다.
           </p>
         </div>
         <div class="screen-nav-buttons">
@@ -124,6 +135,7 @@
       </div>
 
       <!-- 동적 사건 현장 스테이지 (배경 SVG + 동적 핫스팟 오브젝트 컨테이너) -->
+      <div class="scene-scroll">
       <div class="crime-scene-stage-wrap" id="crime-scene-stage">
         <div id="scene-stage-toast" class="scene-stage-toast">
           💡 현장 안의 물건을 직접 클릭(onclick)하여 단서를 조사하고 수집하세요!
@@ -135,23 +147,15 @@
         <!-- 에피소드별 온클릭 증거물 오브젝트(Hotspot) 레이어 -->
         <div id="dynamic-scene-hotspots"></div>
       </div>
+      </div>
 
       <!-- 하단 인벤토리 바 + 잠금 해제 테스트 바 -->
       <div class="scene-bottom-dock">
         <div class="inventory-bar">
-          <div class="inventory-title">🎒 수집한 단서 보관함 (클릭하여 확대)</div>
+          <div class="inventory-title">🎒 증거품 보관함</div>
           <div id="scene-inventory-slots" class="inventory-slots"></div>
         </div>
 
-        <div class="test-unlock-bar">
-          <span style="font-size: 0.78rem; color: var(--accent); font-weight: 700;">🧪 잠금 구역 테스트:</span>
-          <button type="button" id="btn-test-unlock-all-req" class="btn btn-xs">
-            🔓 현재 에피소드 잠금 오브젝트 조건 모두 해금
-          </button>
-          <button type="button" id="btn-test-reset-scene" class="btn btn-xs">
-            🔄 현장 초기화
-          </button>
-        </div>
       </div>
     </section>
 
@@ -162,7 +166,7 @@
       <div class="screen-nav-bar">
         <div class="screen-title-group">
           <h2>💬 용의자 심문실</h2>
-          <p>현장에서 온클릭으로 수집한 단서를 왼쪽 아래에서 선택해 제시(<code>show</code>)하거나 키워드로 질문(<code>ask</code>)하세요!</p>
+          <p>궁금한 것을 직접 물어보거나, 왼쪽에서 <strong>단서를 골라 들이밀어</strong> 거짓말을 무너뜨리세요.</p>
         </div>
         <div class="screen-nav-buttons">
           <button class="btn" type="button" data-goto="notebook">
@@ -195,6 +199,14 @@
             <span id="ai-connection-status" style="font-size: 0.8rem; color: var(--success);">
               ● 시나리오 & Gemini AI 연동 활성
             </span>
+          </div>
+
+          <!-- 취조실 장면: 뒤 배경 · 용의자 · 앞 책상과 전등 (play.js 가 채운다) -->
+          <div id="interro-stage" class="interro-stage" data-emotion="calm" aria-hidden="true">
+            <div class="interro-layer interro-back"></div>
+            <div class="interro-figure"></div>
+            <div class="interro-layer interro-front"></div>
+            <span class="interro-emotion"></span>
           </div>
 
           <div id="chat-messages" class="chat-messages"></div>
@@ -242,6 +254,7 @@
   <!-- 힌트 모달 -->
   <div id="hint-modal" class="modal-backdrop">
     <div class="modal-card">
+      <span class="login-badge">HINT</span>
       <h3>💡 수사 힌트</h3>
       <p id="hint-modal-text"></p>
       <p style="font-size: 0.82rem; color: var(--accent);">
@@ -255,14 +268,15 @@
 
   <!-- 범인 지목 모달 -->
   <div id="accuse-modal" class="modal-backdrop">
-    <div class="modal-card">
-      <h3>🚨 최종 범인 지목하기</h3>
-      <p>수집한 단서와 심문 내용을 바탕으로 진범을 선택하세요.</p>
+    <div class="modal-card accuse-card">
+      <span class="login-badge">FINAL ACCUSATION</span>
+      <h3>🚨 범인은 바로 당신이다!</h3>
+      <p>모은 단서와 심문 내용을 떠올리세요. <strong>랭킹에는 첫 번째 지목만 반영됩니다.</strong></p>
       <form id="accuse-form">
         <div id="accuse-suspect-choices" class="suspect-choice-list"></div>
         <div class="modal-actions">
           <button id="btn-cancel-accuse" type="button" class="btn">취소</button>
-          <button type="submit" class="btn btn-danger">최종 지목 완료 (결과 보기)</button>
+          <button type="submit" class="btn btn-danger">⚖️ 이 사람을 지목한다</button>
         </div>
       </form>
     </div>
