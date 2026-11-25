@@ -147,31 +147,6 @@ const EPISODES_DB = {
         { mode: 'investigate', target: 'appraiser_bag', clueId: 'g07', iconType: 'bag', label: '🧰 감정사의 감정 가방 (g07)', x: 76, y: 58 }
       ]
     },
-    secret: {
-      culprit: 'appraiser',
-      clues: {
-        g02: { id: 'g02', title: '진열대 미세 백색 가루', location: '중앙 진열대', role: '핵심', text: '보석 받침대 위에 보석 감정용 루페 세척제 성분의 특수 가루가 묻어 있다.' },
-        g03: { id: 'g03', title: '환풍구 내부 먼지', location: '전시실 벽면', role: '유도', text: '환풍구 나사는 풀려 있으나 내부 먼지가 그대로여서 사람이 통과한 적은 없다.' },
-        g04: { id: 'g04', title: '보안 센서 3분 공백 로그', location: '관제 모니터', role: '핵심', text: '19:40~19:43 사이 정기 점검 명목으로 레이저 센서가 3분간 수동 해제되었다.' },
-        g05: { id: 'g05', title: '감정 시간 연장 요청서', location: '큐레이터 진술', role: '핵심', text: "최현우 감정사가 '재감정이 필요하다'며 19:40에 보안 해제를 요청한 기록이다." },
-        g06: { id: 'g06', title: '가짜 모조품 거래 계약서', location: '큐레이터 보관함', role: '핵심(동기)', text: '최현우 감정사가 해외 밀수 조직에 진품 다이아몬드를 넘기기로 한 비밀 각서다.' },
-        g07: { id: 'g07', title: '이중 바닥 속 푸른 다이아몬드', location: '감정사의 가방', role: '결정적 증거', text: '감정 장비 가방의 이중 바닥 속에서 사라진 진품 푸른 다이아몬드가 발견되었다!' }
-      },
-      unlockRules: [
-        { clueId: 'g02', type: 'investigate', target: 'glass_dome' },
-        { clueId: 'g03', type: 'investigate', target: 'vent_grille' },
-        { clueId: 'g04', type: 'investigate', target: 'laser_cctv' },
-        { clueId: 'g05', type: 'ask', suspect: 'curator', keywords: ['코드', '시간', '해제', '감정', '19:40'] },
-        { clueId: 'g06', type: 'investigate', target: 'curator_drawer', requires: ['g05'] },
-        { clueId: 'g07', type: 'investigate', target: 'appraiser_bag', requires: ['g02', 'g04'] }
-      ],
-      hints: [
-        '진열대(g02)와 보안 모니터(g04)를 먼저 클릭해 단서를 확보하세요.',
-        '큐레이터 정유진에게 "코드"나 "해제"를 질문하면 g05를 얻어 잠긴 보관함(g06)을 열 수 있습니다.',
-        'g02와 g04를 모두 모으면 감정사의 가방(g07)을 수색할 수 있습니다.'
-      ],
-      solutionExplain: '범인은 보석 감정사 최현우다. 재감정을 핑계로 19:40에 3분간 보안 센서를 해제하게 한 뒤 진품 다이아몬드를 감정 가방 이중 바닥에 숨겼다.'
-    }
   },
 
   'train-003': {
