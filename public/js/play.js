@@ -564,6 +564,21 @@ const EPISODES_DB = {
       ]
     },
   },
+  'gallery-002': {
+    id: 'gallery-002',
+    public: {
+      title: '사라진 푸른 다이아몬드',
+      roomTitle: '국립미술관 제1보석전시실 (야간 특별 보안 구역)',
+      sceneTheme: 'art_gallery',
+      hotspots: [
+        { mode: 'investigate', target: 'glass_dome', clueId: 'g03', iconType: 'glass_dome', label: '💎 중앙 유리 돔 진열대', x: 44, y: 36 },
+        { mode: 'investigate', target: 'vent_grille', clueId: 'g04', iconType: 'vent', label: '🌀 벽면 환풍구 그릴', x: 14, y: 20 },
+        { mode: 'investigate', target: 'laser_cctv', clueId: 'g05', iconType: 'cctv', label: '📹 레이저 보안 관제 모니터', x: 76, y: 14 },
+        { mode: 'investigate', target: 'curator_drawer', clueId: 'g07', iconType: 'drawer', label: '🗄️ 큐레이터 보관함', x: 18, y: 60 },
+        { mode: 'investigate', target: 'appraiser_bag', clueId: 'g11', iconType: 'bag', label: '🧳 관계자 소지품 보관대', x: 76, y: 58 }
+      ]
+    },
+  },
 };
 
 // public/js/play.js 의 `document.addEventListener('DOMContentLoaded', ...` 부터 파일 끝까지를 이 코드로 교체한다.
