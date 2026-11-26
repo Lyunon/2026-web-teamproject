@@ -887,7 +887,12 @@
 }
 
 .chat-panel {
-  position: relative;
+  /* 화면 높이에 맞춘 고정 높이: 대화가 길어져도 패널은 늘어나지 않고 안쪽(대화 기록)만 스크롤된다.
+     위쪽 여백은 따라오는 수사 HUD 와 화면 제목 몫이다. */
+  height: clamp(400px, calc(100dvh - 130px), 920px);
+  align-self: start;
+  position: sticky;
+  top: 112px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
   display: flex;
@@ -928,9 +933,12 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* 높이 0 + min-height 로 패널 높이를 늘리지 않고, 남은 공간을 채운다 */
-  height: 0;
-  min-height: 280px;
+  /* 패널의 남은 높이를 채우고, 넘치는 대화는 이 안에서만 스크롤한다 */
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
   background:
     radial-gradient(ellipse 38% 55% at 50% -6%, rgba(255, 220, 160, 0.2), transparent 72%),
     radial-gradient(circle at 50% 100%, rgba(79, 179, 161, 0.1), transparent 60%),
@@ -1069,6 +1077,27 @@
 .interro-stage[data-emotion="angry"] .interro-emotion { border-left-color: var(--danger); }
 .interro-stage[data-emotion="sad"] .interro-emotion { border-left-color: #6d8fb5; }
 
+.chat-messages::-webkit-scrollbar { width: 8px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+
+/* 다른 영역(장면·단서 배너·입력칸)은 줄어들지 않는다 */
+.chat-header-bar,
+.interro-stage,
+.selected-clue-banner,
+.chat-input-form {
+  flex-shrink: 0;
+}
+
+/* 키가 작은 화면에서는 취조실 장면을 줄여 대화 공간을 확보한다 */
+@media (max-height: 820px) {
+  .interro-stage { height: 170px; }
+}
+
+@media (max-height: 660px) {
+  .interro-stage { height: 120px; }
+}
+
 /* 대화창 공통 */
 .msg {
   max-width: 80%;
@@ -1076,6 +1105,10 @@
   border-radius: 3px;
   font-size: 0.95rem;
   line-height: 1.7;
+}
+
+/* 대화는 보낼 때마다 다시 그려지므로, 새로 붙은 마지막 말풍선만 나타나게 한다 (지난 대화가 깜빡이지 않게) */
+.chat-messages > .msg:last-child {
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -1130,6 +1163,9 @@
   border-radius: 0;
   transform: rotate(-1deg);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+}
+
+.chat-messages > .msg.system-unlock:last-child {
   animation: unlockIn 0.35s ease-out;
 }
 
@@ -1193,6 +1229,11 @@
   .scene-bottom-dock,
   .evidence-closeup-card {
     grid-template-columns: 1fr;
+  }
+  .chat-panel {
+    position: relative;
+    top: auto;
+    height: clamp(480px, calc(100dvh - 110px), 820px);
   }
   .evidence-closeup-visual {
     border-right: 0;
